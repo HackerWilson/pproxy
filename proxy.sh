@@ -443,6 +443,20 @@ kill_by_tag() {
     return 2
 }
 
+find_unused_port() {
+    local LOW_BOUND=9090
+    local RANGE=16384
+    for ((i=0; i<RANGE; i++)); do
+        local CANDIDATE=$((LOW_BOUND + i))
+        if ! (echo -n >/dev/tcp/127.0.0.1/${CANDIDATE}) >/dev/null 2>&1; then
+            echo $CANDIDATE
+            return 0
+        fi
+    done
+    log "ERROR" "No available port found in the range $LOW_BOUND-$((LOW_BOUND + RANGE - 1))"
+    return 1
+}
+
 check_dep
 
 if [ "$1" == "stop" ]; then
@@ -471,9 +485,15 @@ mkdir --parents "proxy-data/config"
 download_geodata_if_necessary
 
 kill_by_tag mihomo
-daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:9091" -ext-ui "$(realpath proxy-data/metacubexd)"
+if ext_port=$(find_unused_port); then
+    log "INFO" "Found unused port: $ext_port"
+else
+    log "ERROR" "Failed to find an unused port"
+    exit 1
+fi
+daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(realpath proxy-data/metacubexd)"
 
-log "INFO" "Mihomo started in the background. You can access the web UI at http://<server-ip>:9091/ui"
+log "INFO" "Mihomo started in the background. You can access the web UI at http://<server-ip>:$ext_port/ui"
 log "INFO" "You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
 me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
 log "INFO" "To stop Mihomo, run: $me stop"
