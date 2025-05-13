@@ -192,7 +192,7 @@ github_proxy_select() {
     local min_time=10.0
     for proxy in "${GITHUB_PROXIES[@]}"; do
         local curl_time
-        if ! curl_time=$(curl --silent --fail --output /dev/null --max-time 3 --write-out "%{time_total}" "$proxy$GITHUB_SPEEDTEST_URL"); then
+        if ! curl_time=$(curl --silent --fail --location --output /dev/null --max-time 3 --write-out "%{time_total}" "$proxy$GITHUB_SPEEDTEST_URL"); then
             # if return error, skip
             log "WARN" "Proxy '$proxy' is not available"
             continue
