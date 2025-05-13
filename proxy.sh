@@ -1,6 +1,8 @@
 #!/bin/bash
 
-readonly TOOL_DEPS=(curl uname gzip unzip chmod setsid grep cut kill)
+readonly TOOL_DEPS=(curl uname gzip chmod setsid grep kill)
+readonly UNZIP_DEP_ALTERNATIVES=(unzip 7z bsdtar python3 jar)
+UNZIP_DEP="UNSET"
 readonly GITHUB_PROXIES=(
     "" # Direct connection
     https://github.akams.cn/
@@ -141,6 +143,41 @@ check_dep() {
             exit 1
         fi
     done
+    for dep in "${UNZIP_DEP_ALTERNATIVES[@]}"; do
+        if command -v "$dep" >/dev/null 2>&1; then
+            UNZIP_DEP="$dep"
+        fi
+    done
+    if [ "$UNZIP_DEP" == "UNSET" ]; then
+        log "ERROR" "No unzip tool found. Please install one of the following: ${UNZIP_DEP_ALTERNATIVES[*]}."
+        exit 1
+    fi
+}
+
+smart_unzip() {
+    local file="$1"
+    local dest="$2"
+    case "$UNZIP_DEP" in
+        unzip)
+            command unzip -o "$file" -d "$dest"
+            ;;
+        7z)
+            command 7z x -y "$file" -o"$dest"
+            ;;
+        bsdtar)
+            command bsdtar --extract --file "$file" --directory "$dest"
+            ;;
+        python3)
+            command python3 -m zipfile --extract "$file" "$dest"
+            ;;
+        jar)
+            command jar --extract --file="$file" -C "$dest"
+            ;;
+        UNSET)
+            log "ERROR" "No unzip tool found. Please install one of the following: ${UNZIP_DEP_ALTERNATIVES[*]}."
+            exit 1
+            ;;
+    esac
 }
 
 FASTEST_GITHUB_PROXY="UNSET"
@@ -325,7 +362,11 @@ download_metacubexd() {
     log "INFO" "Unzipping..."
     log_sublevel_start
     rm --recursive --force "proxy-data/metacubexd/"
-    if ! unzip -o "proxy-data/metacubexd.zip" -d "proxy-data/metacubexd/"; then
+    if ! smart_unzip "proxy-data/metacubexd.zip" "proxy-data/metacubexd/"; then
+        log "ERROR" "Failed to unzip metacubexd"
+        exit 1
+    fi
+    if [ ! -d "proxy-data/metacubexd/" ]; then
         log "ERROR" "Failed to unzip metacubexd"
         exit 1
     fi
@@ -385,13 +426,18 @@ daemon_run() {
 
 kill_by_tag() {
     local tag=$1
-    local tagged_pids
-    if ! tagged_pids=$(grep --files-with-matches "\b_TAG=$tag\b" /proc/[0-9]*/environ 2>/dev/null | cut --delimiter=/ --fields=3); then
-        return 1
+    local grepped_files
+    grepped_files=$(grep --files-with-matches "\b_TAG=$tag\b" /proc/[0-9]*/environ 2>/dev/null)
+    local tagged_pids=()
+    while read -r grepped_file; do
+        if [[ "$grepped_file" =~ /proc/([0-9]+)/environ ]]; then
+            tagged_pids+=("${BASH_REMATCH[1]}")
     fi
-    if [ -n "$tagged_pids" ]; then
-        log "INFO" "Killing pids: $tagged_pids"
-        kill -SIGTERM "$tagged_pids"
+    done <<< "$grepped_files"
+
+    if [ "${#tagged_pids[@]}" -gt 0 ]; then
+        log "INFO" "Killing pids: ${tagged_pids[*]}"
+        kill -SIGTERM "${tagged_pids[@]}"
         return 0
     fi
     return 2
