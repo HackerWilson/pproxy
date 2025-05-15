@@ -531,6 +531,17 @@ if setup_color_support; then
 else
     log "DEBUG" "Terminal does not support color"
 fi
+
+if [ "$EUID" -eq 0 ]; then
+    log "WARN" "You are running this script as root. This is usually NOT recommended because of security and permission issues."
+    log "WARN" "Please run this script as a normal user if possible."
+    read -p "[QUESTION] Do you REALLY want to continue as root? (y/n) " -n 1 -r continue_choice
+    echo
+    if [[ $continue_choice != [yY] ]]; then
+        exit 0
+    fi
+fi
+
 check_dep
 
 if [ "$1" == "stop" ]; then
