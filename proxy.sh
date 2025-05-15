@@ -119,12 +119,57 @@ compare_floats() {
     return 0
 }
 
+COLOR_GREEN=""
+COLOR_RED=""
+COLOR_YELLOW=""
+COLOR_NORMAL=""
+COLOR_UNDERLINE=""
+setup_color_support() {
+    # check if the stdout is a terminal
+    if [ ! -t 1 ]; then
+        return 1
+    fi
+    # check if the terminal supports color
+    if ! command -v tput >/dev/null 2>&1; then
+        return 1
+    fi
+    local ncolors
+    ncolors=$(tput colors)
+    if [ "$ncolors" -lt 8 ]; then
+        return 1
+    fi
+    # get color codes
+    COLOR_GREEN=$(tput setaf 2)
+    COLOR_RED=$(tput setaf 1)
+    COLOR_YELLOW=$(tput setaf 3)
+    COLOR_NORMAL=$(tput sgr0)
+    COLOR_UNDERLINE=$(tput smul)
+    return 0
+}
+
 # Log with indent
 # Usage: log "level" "message"
 LOG_INDENT=0
 log() {
     local level="$1"
     local message="$2"
+    case "$level" in
+        "DEBUG")
+            level="${COLOR_GREEN}DEBUG${COLOR_NORMAL}"
+            ;;
+        "INFO")
+            level="${COLOR_GREEN}INFO${COLOR_NORMAL}"
+            ;;
+        "WARN")
+            level="${COLOR_YELLOW}WARN${COLOR_NORMAL}"
+            ;;
+        "ERROR")
+            level="${COLOR_RED}ERROR${COLOR_NORMAL}"
+            ;;
+        *)
+            level="${COLOR_NORMAL}$level${COLOR_NORMAL}"
+            ;;
+    esac
     if [ $LOG_INDENT -eq 0 ]; then
         printf "[%s] %s\n" "$level" "$message" >&2
     else
@@ -317,8 +362,8 @@ download_mihomo() {
     log "INFO" "Downloading..."
     log_sublevel_start
     # shellcheck disable=SC2155
-    readonly MIHOMO_DOWNLOAD_URL="https://github.com/MetaCubeX/mihomo/releases/download/$mihomo_latest_version/mihomo-$(obtain_mihomo_os)-$(obtain_mihomo_arch)-$mihomo_latest_version.gz" 
-    log "INFO" "Download from: $MIHOMO_DOWNLOAD_URL"
+    readonly MIHOMO_DOWNLOAD_URL="https://github.com/MetaCubeX/mihomo/releases/download/$mihomo_latest_version/mihomo-$(obtain_mihomo_os)-$(obtain_mihomo_arch)-$mihomo_latest_version.gz"
+    log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_DOWNLOAD_URL${COLOR_NORMAL}"
     if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_DOWNLOAD_URL" --output "proxy-data/mihomo.gz"; then
         log "ERROR" "Failed to download Mihomo"
         exit 1
@@ -370,7 +415,7 @@ download_metacubexd() {
     # 1. Download
     log "INFO" "Downloading..."
     log_sublevel_start
-    log "INFO" "Download from: $METACUBEXD_DOWNLOAD_URL"
+    log "INFO" "Download from: ${COLOR_UNDERLINE}$METACUBEXD_DOWNLOAD_URL${COLOR_NORMAL}"
     if ! curl --fail --location "$FASTEST_GITHUB_PROXY$METACUBEXD_DOWNLOAD_URL" --output "proxy-data/metacubexd.zip"; then
         log "ERROR" "Failed to download metacubexd"
         exit 1
@@ -411,7 +456,7 @@ download_geodata_if_necessary() {
         log "INFO" "Downloading geosite..."
         log_sublevel_start
         readonly MIHOMO_GEOSITE_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
-        log "INFO" "Download from: $MIHOMO_GEOSITE_DOWNLOAD_URL"
+        log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOSITE_DOWNLOAD_URL${COLOR_NORMAL}"
         if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOSITE_DOWNLOAD_URL" --output "proxy-data/config/geosite.dat"; then
             log "WARN" "Failed to download geosite"
         else
@@ -425,7 +470,7 @@ download_geodata_if_necessary() {
         log "INFO" "Downloading geoip..."
         log_sublevel_start
         readonly MIHOMO_GEOIP_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
-        log "INFO" "Download from: $MIHOMO_GEOIP_DOWNLOAD_URL"
+        log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOIP_DOWNLOAD_URL${COLOR_NORMAL}"
         if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOIP_DOWNLOAD_URL" --output "proxy-data/config/geoip.dat"; then
             log "WARN" "Failed to download geoip"
         else
@@ -477,6 +522,11 @@ find_unused_port() {
     return 1
 }
 
+if setup_color_support; then
+    log "DEBUG" "Terminal supports color"
+else
+    log "DEBUG" "Terminal does not support color"
+fi
 check_dep
 
 if [ "$1" == "stop" ]; then
@@ -513,7 +563,7 @@ else
 fi
 daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(realpath proxy-data/metacubexd)"
 
-log "INFO" "Mihomo started in the background. You can access the web UI at http://<server-ip>:$ext_port/ui"
+log "INFO" "Mihomo started in the background. You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui$COLOR_NORMAL"
 log "INFO" "You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
 me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
 log "INFO" "To stop Mihomo, run: $me stop"
@@ -545,6 +595,8 @@ try_tunnel_service() {
         return 1
     fi
 
+    log "INFO" "Note: after you start the tunnel, you can usually access the WebUI at ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/ui${COLOR_NORMAL}."
+    log "INFO" "    You can then use ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/${COLOR_NORMAL} as the control server address in the WebUI."
     readonly SSH_DEFAULT_PARAMS=(
         -o StrictHostKeyChecking=no # skip host key checking
         -o ServerAliveInterval=30 # send keep-alive packets
