@@ -158,6 +158,7 @@ check_dep() {
     for dep in "${UNZIP_DEP_ALTERNATIVES[@]}"; do
         if command -v "$dep" >/dev/null 2>&1; then
             UNZIP_DEP="$dep"
+            break
         fi
     done
     if [ "$UNZIP_DEP" == "UNSET" ]; then
