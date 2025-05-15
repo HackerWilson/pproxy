@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# check if the shell is bash
+if [ -z "$BASH_VERSION" ]; then
+    echo "This script requires bash. Please run it with bash. For example:"
+    echo "bash ./proxy.sh"
+    exit 1
+fi
+
 readonly TOOL_DEPS=(curl uname gzip chmod setsid grep kill)
 readonly UNZIP_DEP_ALTERNATIVES=(unzip 7z bsdtar python3 jar)
 UNZIP_DEP="UNSET"
