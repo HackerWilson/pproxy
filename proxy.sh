@@ -136,7 +136,19 @@ log_sublevel_end() {
     LOG_INDENT=$((LOG_INDENT - 4))
 }
 
+# Check dependencies. 
+# Usage: check_dep [<dependency command>]
+# Returns: 0 if <dependency command> is provided and exists, 1 if it doesn't exist. 
+# If <dependency command> is not provided, checks all dependencies in TOOL_DEPS and UNZIP_DEP_ALTERNATIVES. Exit directly if any of them is not found.
 check_dep() {
+    if [ "$#" -gt 0 ]; then
+        # Check specific dependency
+        local dep="$1"
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            return 1
+        fi
+        return 0
+    fi
     for dep in "${TOOL_DEPS[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
             log "ERROR" "Tool $dep is not installed. Please install it and try again."
@@ -497,3 +509,73 @@ log "INFO" "Mihomo started in the background. You can access the web UI at http:
 log "INFO" "You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
 me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
 log "INFO" "To stop Mihomo, run: $me stop"
+
+
+# ==== Tunneling the WebUI through a free service ====
+tunnel_ask_next_or_exit() {
+    local service_name=$1
+    shift
+    local exit_code=$1
+    log "WARN" "Tunneling through $service_name exited with code $exit_code. Because we cannot have any assumptions about the exit code, we don't know if it was successful."
+    read -p "[QUESTION] Do you want to try next service? Press n if you want to exit. (y/n)" -n 1 -r next_service_choice
+    echo
+    if [[ $next_service_choice == [yY] ]]; then
+        return 0
+    fi
+    return 1
+}
+
+try_tunnel_service() {
+    local tunnel_port=$1
+
+    log "INFO" "Tunneling the WebUI through a free service..."
+    log_sublevel_start
+    # check ssh
+    if ! check_dep ssh; then
+        log "ERROR" "SSH is not installed. Please install it and try again."
+        log_sublevel_end
+        return 1
+    fi
+
+    readonly SSH_DEFAULT_PARAMS=(
+        -o StrictHostKeyChecking=no # skip host key checking
+        -o ServerAliveInterval=30 # send keep-alive packets
+        -o ConnectTimeout=5 # set connection timeout
+    )
+    # - tunnel through pinggy.io
+    log "INFO" "Try tunneling through pinggy.io..."
+    ssh -p 443 "${SSH_DEFAULT_PARAMS[@]}" -t -R0:localhost:"$tunnel_port" a.pinggy.io x:passpreflight
+    if ! tunnel_ask_next_or_exit "pinggy.io" $?; then
+        log_sublevel_end
+        return
+    fi
+
+    # - tunnel through localhost.run
+    log "INFO" "Try tunneling through localhost.run..."
+    ssh "${SSH_DEFAULT_PARAMS[@]}" -R80:localhost:"$tunnel_port" localhost.run
+    if ! tunnel_ask_next_or_exit "localhost.run" $?; then
+        log_sublevel_end
+        return
+    fi
+
+    # - tunnel through serveo.net
+    log "INFO" "Try tunneling through serveo.net..."
+    ssh "${SSH_DEFAULT_PARAMS[@]}" -R80:localhost:"$tunnel_port" serveo.net
+    if ! tunnel_ask_next_or_exit "serveo.net" $?; then
+        log_sublevel_end
+        return
+    fi
+
+    log "ERROR" "All tunneling services failed. Please try again later."
+    log_sublevel_end
+    return 1
+}
+
+# ask user whether to tunnel the WebUI through free service
+read -p "[QUESTION] Do you want to tunnel the WebUI through a free service, so that you can access it remotely? (y/n) " -n 1 -r tunnel_choice
+echo
+if [[ $tunnel_choice == [yY] ]]; then
+    try_tunnel_service "$ext_port"
+else
+    log "INFO" "Skipping tunneling."
+fi

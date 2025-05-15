@@ -39,4 +39,4 @@ Use tags: with_gvisor
 ## TODO
 
 - [ ] 自动下载订阅配置文件
-- [ ] 自动配置 WebUI 端口映射，方便在 SSH 服务器上使用
+- [x] 自动配置 WebUI 端口映射，方便在 SSH 服务器上使用
