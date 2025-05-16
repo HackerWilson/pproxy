@@ -34,7 +34,7 @@ compare_floats() {
         echo "Error: Invalid number format for first argument: '$num1_orig'" >&2
         return 1
     fi
-     if ! [[ "$num2_orig" =~ $float_regex ]]; then
+    if ! [[ "$num2_orig" =~ $float_regex ]]; then
         echo "Error: Invalid number format for second argument: '$num2_orig'" >&2
         return 1
     fi
@@ -79,7 +79,7 @@ compare_floats() {
         # --- Pad Fractional Parts to Same Length ---
         local len1="${#frac1}"
         local len2="${#frac2}"
-        local max_decimals=$(( len1 > len2 ? len1 : len2 ))
+        local max_decimals=$((len1 > len2 ? len1 : len2))
 
         while [[ "${#frac1}" -lt "$max_decimals" ]]; do frac1="${frac1}0"; done
         while [[ "${#frac2}" -lt "$max_decimals" ]]; do frac2="${frac2}0"; done
@@ -100,15 +100,19 @@ compare_floats() {
         # --- Compare the resulting numbers using Bash INTEGER comparison ---
         local cmp_result=""
         # Note: Using [[ ]] with arithmetic operators is safer than (( )) or [ ]
-        if [[ "$comp1" -lt "$comp2" ]]; then cmp_result="<";
-        elif [[ "$comp1" -gt "$comp2" ]]; then cmp_result=">";
+        if [[ "$comp1" -lt "$comp2" ]]; then
+            cmp_result="<"
+        elif [[ "$comp1" -gt "$comp2" ]]; then
+            cmp_result=">"
         else cmp_result="="; fi
         # --- End Critical Fix Area ---
 
         # --- Adjust result if both numbers were negative ---
         if [[ "$sign1" == "-" ]]; then # (implies sign2 is also "-")
-            if [[ "$cmp_result" == "<" ]]; then result=">";
-            elif [[ "$cmp_result" == ">" ]]; then result="<";
+            if [[ "$cmp_result" == "<" ]]; then
+                result=">"
+            elif [[ "$cmp_result" == ">" ]]; then
+                result="<"
             else result="="; fi
         else
             result="$cmp_result"
@@ -154,28 +158,28 @@ log() {
     local level="$1"
     local message="$2"
     case "$level" in
-        "DEBUG")
-            level="${COLOR_GREEN}DEBUG${COLOR_NORMAL}"
-            ;;
-        "INFO")
-            level="${COLOR_GREEN}INFO${COLOR_NORMAL}"
-            ;;
-        "WARN")
-            level="${COLOR_YELLOW}WARN${COLOR_NORMAL}"
-            ;;
-        "ERROR")
-            level="${COLOR_RED}ERROR${COLOR_NORMAL}"
-            ;;
-        *)
-            level="${COLOR_NORMAL}$level${COLOR_NORMAL}"
-            ;;
+    "DEBUG")
+        level="${COLOR_GREEN}DEBUG${COLOR_NORMAL}"
+        ;;
+    "INFO")
+        level="${COLOR_GREEN}INFO${COLOR_NORMAL}"
+        ;;
+    "WARN")
+        level="${COLOR_YELLOW}WARN${COLOR_NORMAL}"
+        ;;
+    "ERROR")
+        level="${COLOR_RED}ERROR${COLOR_NORMAL}"
+        ;;
+    *)
+        level="${COLOR_NORMAL}$level${COLOR_NORMAL}"
+        ;;
     esac
     if [ $LOG_INDENT -eq 0 ]; then
         printf "[%s] %s\n" "$level" "$message" >&2
     else
         local minus_count=$((LOG_INDENT - 3)) # how many "-"s in " -> "
         printf "[%s] " "$level" >&2
-        for ((i=0; i<minus_count; i++)); do
+        for ((i = 0; i < minus_count; i++)); do
             printf "-" >&2
         done
         printf "> %s\n" "$message" >&2
@@ -188,9 +192,9 @@ log_sublevel_end() {
     LOG_INDENT=$((LOG_INDENT - 4))
 }
 
-# Check dependencies. 
+# Check dependencies.
 # Usage: check_dep [<dependency command>]
-# Returns: 0 if <dependency command> is provided and exists, 1 if it doesn't exist. 
+# Returns: 0 if <dependency command> is provided and exists, 1 if it doesn't exist.
 # If <dependency command> is not provided, checks all dependencies in TOOL_DEPS and UNZIP_DEP_ALTERNATIVES. Exit directly if any of them is not found.
 check_dep() {
     if [ "$#" -gt 0 ]; then
@@ -223,25 +227,25 @@ smart_unzip() {
     local file="$1"
     local dest="$2"
     case "$UNZIP_DEP" in
-        unzip)
-            command unzip -o "$file" -d "$dest"
-            ;;
-        7z)
-            command 7z x -y "$file" -o"$dest"
-            ;;
-        bsdtar)
-            command bsdtar --extract --file "$file" --directory "$dest"
-            ;;
-        python3)
-            command python3 -m zipfile --extract "$file" "$dest"
-            ;;
-        jar)
-            command jar --extract --file="$file" -C "$dest"
-            ;;
-        UNSET)
-            log "ERROR" "No unzip tool found. Please install one of the following: ${UNZIP_DEP_ALTERNATIVES[*]}."
-            exit 1
-            ;;
+    unzip)
+        command unzip -o "$file" -d "$dest"
+        ;;
+    7z)
+        command 7z x -y "$file" -o"$dest"
+        ;;
+    bsdtar)
+        command bsdtar --extract --file "$file" --directory "$dest"
+        ;;
+    python3)
+        command python3 -m zipfile --extract "$file" "$dest"
+        ;;
+    jar)
+        command jar --extract --file="$file" -C "$dest"
+        ;;
+    UNSET)
+        log "ERROR" "No unzip tool found. Please install one of the following: ${UNZIP_DEP_ALTERNATIVES[*]}."
+        exit 1
+        ;;
     esac
 }
 
@@ -298,16 +302,16 @@ obtain_mihomo_os() {
     uname_os=$(uname --kernel-name)
     local mihomo_os
     case "$uname_os" in
-        Darwin)
-            mihomo_os="darwin"
-            ;;
-        Linux)
-            mihomo_os="linux"
-            ;;
-        *)
-            log "ERROR" "Unsupported OS: $uname_os"
-            exit 1
-            ;;
+    Darwin)
+        mihomo_os="darwin"
+        ;;
+    Linux)
+        mihomo_os="linux"
+        ;;
+    *)
+        log "ERROR" "Unsupported OS: $uname_os"
+        exit 1
+        ;;
     esac
     echo "$mihomo_os"
 }
@@ -318,32 +322,32 @@ obtain_mihomo_arch() {
     uname_arch=$(uname --machine)
     local mihomo_arch
     case "$uname_arch" in
-        x86_64)
-            mihomo_arch="amd64"
-            ;;
-        aarch64)
-            mihomo_arch="arm64"
-            ;;
-        armv7l)
-            mihomo_arch="armv7"
-            ;;
-        riscv64)
-            mihomo_arch="riscv64"
-            ;;
-        i686)
-            mihomo_arch="386"
-            ;;
-        *)
-            log "ERROR" "Unsupported architecture: $uname_arch"
-            exit 1
-            ;;
+    x86_64)
+        mihomo_arch="amd64"
+        ;;
+    aarch64)
+        mihomo_arch="arm64"
+        ;;
+    armv7l)
+        mihomo_arch="armv7"
+        ;;
+    riscv64)
+        mihomo_arch="riscv64"
+        ;;
+    i686)
+        mihomo_arch="386"
+        ;;
+    *)
+        log "ERROR" "Unsupported architecture: $uname_arch"
+        exit 1
+        ;;
     esac
     echo "$mihomo_arch"
 }
 
 download_mihomo() {
     log "INFO" "Downloading Mihomo..."
-    
+
     log_sublevel_start
 
     # 1. Fetch the latest version
@@ -443,7 +447,7 @@ download_metacubexd() {
     # strip the first directory layer
     shopt -s nullglob dotglob
     local unarchived_file_list=("proxy-data/metacubexd/"*)
-    if (( ${#unarchived_file_list[@]} == 1 )) && [ -d "${unarchived_file_list[0]}" ]; then
+    if ((${#unarchived_file_list[@]} == 1)) && [ -d "${unarchived_file_list[0]}" ]; then
         log "INFO" "Stripping the first directory layer..."
         mv "${unarchived_file_list[0]}"/* "proxy-data/metacubexd/"
         rmdir "${unarchived_file_list[0]}"
@@ -490,7 +494,10 @@ daemon_run() {
     local output_file=$1
     shift
     # https://stackoverflow.com/questions/3430330/best-way-to-make-a-shell-script-daemon
-    ( umask 0; _TAG="$tag" setsid "$@" </dev/null &>>"$output_file" & ) &
+    (
+        umask 0
+        _TAG="$tag" setsid "$@" </dev/null &>>"$output_file" &
+    ) &
 }
 
 kill_by_tag() {
@@ -501,8 +508,8 @@ kill_by_tag() {
     while read -r grepped_file; do
         if [[ "$grepped_file" =~ /proc/([0-9]+)/environ ]]; then
             tagged_pids+=("${BASH_REMATCH[1]}")
-    fi
-    done <<< "$grepped_files"
+        fi
+    done <<<"$grepped_files"
 
     if [ "${#tagged_pids[@]}" -gt 0 ]; then
         log "INFO" "Killing pids: ${tagged_pids[*]}"
@@ -515,7 +522,7 @@ kill_by_tag() {
 find_unused_port() {
     local LOW_BOUND=9090
     local RANGE=16384
-    for ((i=0; i<RANGE; i++)); do
+    for ((i = 0; i < RANGE; i++)); do
         local CANDIDATE=$((LOW_BOUND + i))
         if ! (echo -n >/dev/tcp/127.0.0.1/${CANDIDATE}) >/dev/null 2>&1; then
             echo $CANDIDATE
@@ -549,7 +556,7 @@ if [ "$1" == "stop" ]; then
     exit 0
 fi
 
-mkdir --parents "proxy-data/" 
+mkdir --parents "proxy-data/"
 
 if mihomo_version_output=$(mihomo_exist); then
     log "INFO" "Mihomo already exists, skip downloading. Version: "
@@ -566,7 +573,7 @@ else
     download_metacubexd
 fi
 
-mkdir --parents "proxy-data/config" 
+mkdir --parents "proxy-data/config"
 download_geodata_if_necessary
 
 kill_by_tag mihomo
@@ -583,22 +590,21 @@ log "INFO" "You may need to put your subscription file at proxy-data/config/conf
 me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
 log "INFO" "To stop Mihomo, run: $me stop"
 
-
 # ==== Tunneling the WebUI through a free service ====
-tunnel_ask_next_or_exit() {
-    local service_name=$1
-    shift
-    local exit_code=$1
-    log "WARN" "Tunneling through $service_name exited with code $exit_code. Because we cannot have any assumptions about the exit code, we don't know if it was successful."
-    read -p "[QUESTION] Do you want to try next service? Press n if you want to exit. (y/n)" -n 1 -r next_service_choice
-    echo
-    if [[ $next_service_choice == [yY] ]]; then
-        return 0
-    fi
-    return 1
-}
-
 try_tunnel_service() {
+    tunnel_ask_next_or_exit() {
+        local service_name=$1
+        shift
+        local exit_code=$1
+        log "WARN" "Tunneling through $service_name exited with code $exit_code. Because we cannot have any assumptions about the exit code, we don't know if it was successful."
+        read -p "[QUESTION] Do you want to try next service? Press n if you want to exit. (y/n)" -n 1 -r next_service_choice
+        echo
+        if [[ $next_service_choice == [yY] ]]; then
+            return 0
+        fi
+        return 1
+    }
+
     local tunnel_port=$1
 
     log "INFO" "Tunneling the WebUI through a free service..."
@@ -614,8 +620,8 @@ try_tunnel_service() {
     log "INFO" "    You can then use ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/${COLOR_NORMAL} as the control server address in the WebUI."
     readonly SSH_DEFAULT_PARAMS=(
         -o StrictHostKeyChecking=no # skip host key checking
-        -o ServerAliveInterval=30 # send keep-alive packets
-        -o ConnectTimeout=5 # set connection timeout
+        -o ServerAliveInterval=30   # send keep-alive packets
+        -o ConnectTimeout=5         # set connection timeout
     )
     # - tunnel through pinggy.io
     log "INFO" "Try tunneling through pinggy.io..."
