@@ -7,7 +7,7 @@ if [ -z "$BASH_VERSION" ]; then
     exit 1
 fi
 
-readonly TOOL_DEPS=(curl uname gzip chmod setsid grep kill)
+readonly TOOL_DEPS=(curl gzip chmod setsid grep kill)
 readonly UNZIP_DEP_ALTERNATIVES=(unzip 7z bsdtar python3 jar)
 UNZIP_DEP="UNSET"
 readonly GITHUB_PROXIES=(
@@ -205,6 +205,7 @@ check_dep() {
         fi
         return 0
     fi
+    
     for dep in "${TOOL_DEPS[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
             log "ERROR" "Tool $dep is not installed. Please install it and try again."
@@ -298,18 +299,16 @@ github_proxy_select() {
 
 # Obtain Mihomo-specific OS name to build the download URL
 obtain_mihomo_os() {
-    local uname_os
-    uname_os=$(uname --kernel-name)
     local mihomo_os
-    case "$uname_os" in
-    Darwin)
+    case "$MACHTYPE" in
+    *darwin*)
         mihomo_os="darwin"
         ;;
-    Linux)
+    *linux*)
         mihomo_os="linux"
         ;;
     *)
-        log "ERROR" "Unsupported OS: $uname_os"
+        log "ERROR" "Unsupported OS: $MACHTYPE"
         exit 1
         ;;
     esac
@@ -318,27 +317,25 @@ obtain_mihomo_os() {
 
 # Obtain Mihomo-specific architecture name to build the download URL
 obtain_mihomo_arch() {
-    local uname_arch
-    uname_arch=$(uname --machine)
     local mihomo_arch
-    case "$uname_arch" in
-    x86_64)
+    case "$MACHTYPE" in
+    x86_64-* | x86_64 | amd64-* | amd64)
         mihomo_arch="amd64"
         ;;
-    aarch64)
+    aarch64-* | aarch64 | arm64-* | arm64 | armv8*-* | armv8*)
         mihomo_arch="arm64"
         ;;
-    armv7l)
+    armv7*-* | armv7* | armhf*-* | armhf*)
         mihomo_arch="armv7"
         ;;
-    riscv64)
+    riscv64-* | riscv64)
         mihomo_arch="riscv64"
         ;;
-    i686)
+    i[3-6]86-* | i[3-6]86)
         mihomo_arch="386"
         ;;
     *)
-        log "ERROR" "Unsupported architecture: $uname_arch"
+        log "ERROR" "Unsupported architecture: $MACHTYPE"
         exit 1
         ;;
     esac
