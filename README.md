@@ -40,4 +40,4 @@ Use tags: with_gvisor
 
 - [ ] 自动下载订阅配置文件
 - [x] 自动配置 WebUI 端口映射，方便在 SSH 服务器上使用
-- [ ] 支持 help、status、restart、tunnel 子命令（实现下载订阅配置后，还需要实现 config）
+- [x] 支持 help、status、restart、tunnel 子命令（实现下载订阅配置后，还需要实现 config）

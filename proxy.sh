@@ -380,6 +380,20 @@ download_geodata_if_necessary() {
     fi
 }
 
+mihomo_status() {
+    log "INFO" "Mihomo status:"
+    log_sublevel_start
+
+    find_by_tag mihomo
+    if [ "${#TAGGED_PIDS[@]}" -gt 0 ]; then
+        log "INFO" "Mihomo is running with pids: ${TAGGED_PIDS[*]}"
+    else
+        log "INFO" "Mihomo is not running"
+    fi
+
+    log_sublevel_end
+}
+
 daemon_run() {
     local tag=$1
     shift
@@ -392,20 +406,26 @@ daemon_run() {
     ) &
 }
 
-kill_by_tag() {
+TAGGED_PIDS=()
+find_by_tag() {
     local tag=$1
     local grepped_files
     grepped_files=$(grep --files-with-matches "\b_TAG=$tag\b" /proc/[0-9]*/environ 2>/dev/null)
-    local tagged_pids=()
+    TAGGED_PIDS=()
     while read -r grepped_file; do
         if [[ "$grepped_file" =~ /proc/([0-9]+)/environ ]]; then
-            tagged_pids+=("${BASH_REMATCH[1]}")
+            TAGGED_PIDS+=("${BASH_REMATCH[1]}")
         fi
     done <<<"$grepped_files"
+}
 
-    if [ "${#tagged_pids[@]}" -gt 0 ]; then
-        log "INFO" "Killing pids: ${tagged_pids[*]}"
-        kill -SIGTERM "${tagged_pids[@]}"
+kill_by_tag() {
+    local tag=$1
+    find_by_tag "$tag"
+
+    if [ "${#TAGGED_PIDS[@]}" -gt 0 ]; then
+        log "INFO" "Killing pids: ${TAGGED_PIDS[*]}"
+        kill -SIGTERM "${TAGGED_PIDS[@]}"
         return 0
     fi
     return 2
@@ -425,6 +445,49 @@ find_unused_port() {
     return 1
 }
 
+usage() {
+    cat >&2 <<EOF
+Usage: $0 [status | stop | tunnel <port> | help | -h | --help]
+
+Subcommands:
+  help, -h, --help  Show this help message
+  status            Show the status of Mihomo
+  stop              Stop Mihomo by killing the process
+  tunnel <port>     Tunnel localhost:<port> through a free service
+
+If no subcommand is provided, the script will download, start Mihomo and Metacubexd, and ask for tunneling.
+EOF
+}
+
+arg_parse() {
+    if [ "$#" -eq 0 ]; then
+        return 0
+    fi
+
+    case $1 in
+    help | -h | --help)
+        usage
+        exit 0
+        ;;
+    status)
+        return 1
+        ;;
+    stop)
+        return 2
+        ;;
+    tunnel)
+        if [ "$#" -ne 2 ]; then
+            log "ERROR" "Usage: $0 tunnel <port>"
+            exit 1
+        fi
+        return 3
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+    esac
+}
 main() {
     if setup_color_support; then
         log "DEBUG" "Terminal supports color"
@@ -444,11 +507,26 @@ main() {
 
     check_dep
 
-    if [ "$1" == "stop" ]; then
+    # parse arguments
+    arg_parse "$@"
+    local arg_parse_result=$?
+
+    case $arg_parse_result in
+    1)
+        mihomo_status
+        exit 0
+        ;;
+    2)
         kill_by_tag mihomo
         exit 0
-    fi
+        ;;
+    3)
+        try_tunnel_service "$2"
+        exit 0
+        ;;
+    esac
 
+    # no arguments, start Mihomo
     mkdir --parents "proxy-data/"
 
     if mihomo_version_output=$(mihomo_exist); then
@@ -663,8 +741,7 @@ compare_floats() {
     return 0
 }
 
-
-
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    # only execute if this script is run directly
     main "$@"
 fi
