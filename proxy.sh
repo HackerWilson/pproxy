@@ -614,7 +614,7 @@ try_tunnel_service() {
 
     # - tunnel through localhost.run
     log "INFO" "Try tunneling through localhost.run..."
-    ssh "${SSH_DEFAULT_PARAMS[@]}" -R80:localhost:"$tunnel_port" localhost.run
+    ssh "${SSH_DEFAULT_PARAMS[@]}" -R80:localhost:"$tunnel_port" nokey@localhost.run
     if ! tunnel_ask_next_or_exit "localhost.run" $?; then
         log_sublevel_end
         return
