@@ -398,6 +398,7 @@ daemon_run() {
     local tag=$1
     shift
     local output_file=$1
+    shift
     # https://stackoverflow.com/questions/3430330/best-way-to-make-a-shell-script-daemon
     (
         umask 0
