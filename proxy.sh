@@ -596,12 +596,18 @@ main() {
     fi
 
     if [ "$EUID" -eq 0 ]; then
-        log "WARN" "You are running this script as root. This is usually NOT recommended because of security and permission issues."
-        log "WARN" "Please run this script as a normal user if possible."
-        read -p "[QUESTION] Do you REALLY want to continue as root? (y/n) " -n 1 -r continue_choice
-        echo
-        if [[ $continue_choice != [yY] ]]; then
-            exit 0
+        if [ ! -f "proxy-data/do_as_root" ]; then
+            log "WARN" "You are running this script as root. This is usually NOT recommended because of security and permission issues."
+            log "WARN" "Please run this script as a normal user if possible."
+            read -p "[QUESTION] Do you REALLY want to continue as root? (y/n) " -n 1 -r continue_choice
+            echo
+            if [[ $continue_choice != [yY] ]]; then
+                exit 0
+            fi
+            # Create the marker file to skip this warning in the future
+            mkdir --parents "proxy-data"
+            touch "proxy-data/do_as_root"
+            log "DEBUG" "Created proxy-data/do_as_root. This warning will not be shown again."
         fi
     fi
 
@@ -771,7 +777,27 @@ compare_floats() {
     fi
 
     # --- Handle Signs ---
-    local sign1="" sign2=""
+    local sign1=""
+        # --- Separate Integer and Fractional Parts ---
+        local int1="" frac1="" int2="" frac2=""
+
+        if [[ "$num1" == *"."* ]]; then
+            int1="${num1%%.*}"
+            frac1="${num1#*.}"
+        else
+            int1="$num1"
+            frac1=""
+        fi
+        # Handle cases like ".5" -> int="0", frac="5"
+        # Handle empty int like "." -> int="0"
+        [[ -z "$int1" ]] && int1="0"
+
+        if [[ "$num2" == *"."* ]]; then
+            int2="${num2%%.*}"
+            frac2="${num2#*.}"
+        else
+            int2="$num2"
+            frac2= sign2=""
     [[ "$num1_orig" == "-"* ]] && sign1="-"
     [[ "$num2_orig" == "-"* ]] && sign2="-"
 
