@@ -23,6 +23,7 @@ COLOR_RED=""
 COLOR_YELLOW=""
 COLOR_NORMAL=""
 COLOR_UNDERLINE=""
+COLOR_BOLD=""
 setup_color_support() {
     # check if the stdout is a terminal
     if [ ! -t 1 ]; then
@@ -43,6 +44,7 @@ setup_color_support() {
     COLOR_YELLOW=$(tput setaf 3)
     COLOR_NORMAL=$(tput sgr0)
     COLOR_UNDERLINE=$(tput smul)
+    COLOR_BOLD=$(tput bold)
     return 0
 }
 
@@ -582,7 +584,7 @@ handle_subscription_config() {
                     log "WARN" "No valid content input, keeping existing config file unchanged"
                 fi
             else
-                log "INFO" "Skipping config input. You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
+                log "WARN" "Skipping config input. You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
             fi
         else
             log "INFO" "Valid config file already exists at proxy-data/config/config.yaml"
@@ -672,7 +674,8 @@ main() {
     fi
     daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(realpath proxy-data/metacubexd)"
 
-    log "INFO" "Mihomo started in the background. You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui$COLOR_NORMAL"
+    log "INFO" "${COLOR_BOLD}Mihomo started in the background!${COLOR_NORMAL}"
+    log "INFO" "You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui${COLOR_NORMAL}. Use ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/${COLOR_NORMAL} as the control server address in the WebUI."
     
     if is_config_valid "proxy-data/config/config.yaml"; then
         log "INFO" "Config file is ready at proxy-data/config/config.yaml"
