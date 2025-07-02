@@ -779,27 +779,7 @@ compare_floats() {
     fi
 
     # --- Handle Signs ---
-    local sign1=""
-        # --- Separate Integer and Fractional Parts ---
-        local int1="" frac1="" int2="" frac2=""
-
-        if [[ "$num1" == *"."* ]]; then
-            int1="${num1%%.*}"
-            frac1="${num1#*.}"
-        else
-            int1="$num1"
-            frac1=""
-        fi
-        # Handle cases like ".5" -> int="0", frac="5"
-        # Handle empty int like "." -> int="0"
-        [[ -z "$int1" ]] && int1="0"
-
-        if [[ "$num2" == *"."* ]]; then
-            int2="${num2%%.*}"
-            frac2="${num2#*.}"
-        else
-            int2="$num2"
-            frac2= sign2=""
+    local sign1="" sign2=""
     [[ "$num1_orig" == "-"* ]] && sign1="-"
     [[ "$num2_orig" == "-"* ]] && sign2="-"
 
