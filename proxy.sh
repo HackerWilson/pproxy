@@ -608,7 +608,7 @@ main() {
             fi
             # Create the marker file to skip this warning in the future
             mkdir --parents "proxy-data"
-            touch "proxy-data/do_as_root"
+            echo > "proxy-data/do_as_root"
             log "DEBUG" "Created proxy-data/do_as_root. This warning will not be shown again."
         fi
     fi
@@ -677,7 +677,7 @@ main() {
     if is_config_valid "proxy-data/config/config.yaml"; then
         log "INFO" "Config file is ready at proxy-data/config/config.yaml"
     else
-        log "INFO" "Config file is not found or invalid. You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
+        log "WARN" "Config file is not found or invalid. You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
     fi
     me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
     log "INFO" "To stop Mihomo, run: $me stop"
