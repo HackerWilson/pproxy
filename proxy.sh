@@ -447,15 +447,17 @@ find_unused_port() {
 
 usage() {
     cat >&2 <<EOF
-Usage: $0 [status | stop | tunnel <port> | help | -h | --help]
+Usage: $0 [status | stop | tunnel <port> | help | -h | --help | <subscription_url>]
 
 Subcommands:
-  help, -h, --help  Show this help message
-  status            Show the status of Mihomo
-  stop              Stop Mihomo by killing the process
-  tunnel <port>     Tunnel localhost:<port> through a free service
+  help, -h, --help     Show this help message
+  status               Show the status of Mihomo
+  stop                 Stop Mihomo by killing the process  
+  tunnel <port>        Tunnel localhost:<port> through a free service
+  <subscription_url>   URL to download subscription config file. Can be "-" (input from stdin) or HTTP(S) URL.
 
-If no subcommand is provided, the script will download, start Mihomo and Metacubexd, and ask for tunneling.
+If no argument is provided, the script will download, start Mihomo and Metacubexd, and ask for tunneling.
+If subscription_url is provided, it will be downloaded to proxy-data/config/config.yaml.
 EOF
 }
 
@@ -482,12 +484,110 @@ arg_parse() {
         fi
         return 3
         ;;
+    -)
+        # Special case: read from stdin
+        return 4
+        ;;
     *)
-        usage
-        exit 1
+        # Check if it's a URL (contains . or /)
+        if [[ "$1" == *"."* ]] || [[ "$1" == *"/"* ]]; then
+            return 4  # URL provided
+        else
+            usage
+            exit 1
+        fi
         ;;
     esac
 }
+
+download_subscription() {
+    local subscription_url="$1"
+    
+    if [ "$subscription_url" == "-" ]; then
+        log "INFO" "Reading subscription from stdin..."
+        log_sublevel_start
+        
+        if read_config_from_stdin; then
+            log_sublevel_end
+            return
+        else
+            log "ERROR" "No valid content provided from stdin"
+            exit 1
+        fi
+    fi
+    
+    log "INFO" "Downloading subscription from URL..."
+    log_sublevel_start
+    
+    # Add http:// prefix if not present
+    if [[ ! "$subscription_url" =~ ^https?:// ]]; then
+        subscription_url="https://$subscription_url"
+        log "INFO" "Added https:// prefix to URL"
+    fi
+    
+    log "INFO" "Download from: ${COLOR_UNDERLINE}$subscription_url${COLOR_NORMAL}"
+    local temp_config
+    if ! temp_config=$(curl --fail --location "$subscription_url" --output -); then
+        log "ERROR" "Failed to download subscription. The original config file will be kept unchanged."
+        exit 1
+    fi
+
+    # Save to file only if download is successful
+    echo "$temp_config" > "proxy-data/config/config.yaml"
+    log "INFO" "Downloaded to proxy-data/config/config.yaml"
+    
+    log_sublevel_end
+}
+
+is_config_valid() {
+    local config_file="$1"
+    if [[ -f "$config_file" ]] && [[ -s "$config_file" ]]; then
+        if grep --quiet --extended-regexp "^(proxies|proxy-groups|rules):" "$config_file" 2>/dev/null; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+read_config_from_stdin() {
+    log "INFO" "Please input your config content below (press Ctrl+D on a new line to finish):"
+    local temp_config
+    temp_config=$(cat)
+    # Check if input is not empty (ignore whitespace-only content)
+    if [[ -n "${temp_config// }" ]] && [[ -n "${temp_config//$'\n'}" ]]; then
+        echo "$temp_config" > "proxy-data/config/config.yaml"
+        log "INFO" "Config saved to proxy-data/config/config.yaml"
+        return 0
+    else
+        return 1
+    fi
+}
+
+handle_subscription_config() {
+    local subscription_url="$1"
+    
+    if [ -n "$subscription_url" ]; then
+        # URL provided (including "-" for stdin), always process regardless of existing config
+        download_subscription "$subscription_url"
+    else
+        # No URL provided, check if we have a valid config file
+        if ! is_config_valid "proxy-data/config/config.yaml"; then
+            # No valid config file, ask user
+            read -p "[QUESTION] No valid config file found. Do you want to input config content manually? (y/n) " -n 1 -r input_choice
+            echo
+            if [[ $input_choice == [yY] ]]; then
+                if ! read_config_from_stdin; then
+                    log "WARN" "No valid content input, keeping existing config file unchanged"
+                fi
+            else
+                log "INFO" "Skipping config input. You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
+            fi
+        else
+            log "INFO" "Valid config file already exists at proxy-data/config/config.yaml"
+        fi
+    fi
+}
+
 main() {
     if setup_color_support; then
         log "DEBUG" "Terminal supports color"
@@ -510,7 +610,7 @@ main() {
     # parse arguments
     arg_parse "$@"
     local arg_parse_result=$?
-
+    local subscription_url=""
     case $arg_parse_result in
     1)
         mihomo_status
@@ -524,9 +624,14 @@ main() {
         try_tunnel_service "$2"
         exit 0
         ;;
+    4)
+        if [[ "$#" -gt 0 ]]; then
+            subscription_url="$1"
+        fi
+        ;;
     esac
 
-    # no arguments, start Mihomo
+    # no arguments or URL provided, start Mihomo
     mkdir --parents "proxy-data/"
 
     if mihomo_version_output=$(mihomo_exist); then
@@ -548,6 +653,9 @@ main() {
     download_geodata_if_necessary
 
     kill_by_tag mihomo
+    
+    handle_subscription_config "$subscription_url"
+    
     if ext_port=$(find_unused_port); then
         log "INFO" "Found unused port: $ext_port"
     else
@@ -557,7 +665,12 @@ main() {
     daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(realpath proxy-data/metacubexd)"
 
     log "INFO" "Mihomo started in the background. You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui$COLOR_NORMAL"
-    log "INFO" "You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
+    
+    if is_config_valid "proxy-data/config/config.yaml"; then
+        log "INFO" "Config file is ready at proxy-data/config/config.yaml"
+    else
+        log "INFO" "Config file is not found or invalid. You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
+    fi
     me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
     log "INFO" "To stop Mihomo, run: $me stop"
 
