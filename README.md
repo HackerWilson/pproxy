@@ -57,6 +57,10 @@ $ bash proxy.sh tunnel 9000
 $ bash proxy.sh help 或 $ bash proxy.sh -h 或 $ bash proxy.sh --help
 ```
 
+### 注意事项
+
+- `proxy.sh` 仅支持 Clash / Clash Meta / Mihomo 的配置文件格式，从你的代理服务商获取配置文件时请注意。
+
 ## TODO
 
 - [x] 下载订阅配置文件
