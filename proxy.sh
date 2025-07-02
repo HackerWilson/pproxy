@@ -500,6 +500,8 @@ arg_parse() {
     esac
 }
 
+readonly MIHOMO_USER_AGENT="mihomo.proxy.sh/v1.0 (clash.meta)"
+
 download_subscription() {
     local subscription_url="$1"
     
@@ -527,7 +529,7 @@ download_subscription() {
     
     log "INFO" "Download from: ${COLOR_UNDERLINE}$subscription_url${COLOR_NORMAL}"
     local temp_config
-    if ! temp_config=$(curl --fail --location "$subscription_url" --output -); then
+    if ! temp_config=$(curl --fail --location --user-agent "$MIHOMO_USER_AGENT" "$subscription_url" --output -); then
         log "ERROR" "Failed to download subscription. The original config file will be kept unchanged."
         exit 1
     fi
