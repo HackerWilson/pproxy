@@ -61,6 +61,9 @@ log() {
     "INFO")
         level="${COLOR_GREEN}INFO${COLOR_NORMAL}"
         ;;
+    "SUCCESS")
+        level="${COLOR_GREEN}SUCCESS${COLOR_NORMAL}"
+        ;;
     "WARN")
         level="${COLOR_YELLOW}WARN${COLOR_NORMAL}"
         ;;
@@ -187,10 +190,10 @@ github_proxy_select() {
     fi
     log_sublevel_end
     if [[ -z "$FASTEST_GITHUB_PROXY" ]]; then
-        log "INFO" "Fastest GitHub proxy: Direct connection"
+        log "SUCCESS" "Fastest GitHub proxy: Direct connection"
         return
     else
-        log "INFO" "Fastest GitHub proxy: $FASTEST_GITHUB_PROXY"
+        log "SUCCESS" "Fastest GitHub proxy: $FASTEST_GITHUB_PROXY"
     fi
 }
 
@@ -270,7 +273,7 @@ download_mihomo() {
         log "ERROR" "Failed to download Mihomo"
         exit 1
     fi
-    log "INFO" "Downloaded to proxy-data/mihomo.gz"
+    log "SUCCESS" "Downloaded to proxy-data/mihomo.gz"
     log_sublevel_end
 
     # 3. Unzip
@@ -284,7 +287,7 @@ download_mihomo() {
         log "ERROR" "Failed to make mihomo executable"
         exit 1
     fi
-    log "INFO" "Unzipped to proxy-data/mihomo"
+    log "SUCCESS" "Unzipped to proxy-data/mihomo"
     log_sublevel_end
 
     log_sublevel_end
@@ -322,7 +325,7 @@ download_metacubexd() {
         log "ERROR" "Failed to download metacubexd"
         exit 1
     fi
-    log "INFO" "Downloaded to proxy-data/metacubexd.zip"
+    log "SUCCESS" "Downloaded to proxy-data/metacubexd.zip"
     log_sublevel_end
 
     # 2. Unzip
@@ -337,7 +340,7 @@ download_metacubexd() {
         log "ERROR" "Failed to unzip metacubexd"
         exit 1
     fi
-    log "INFO" "Unzipped to proxy-data/metacubexd"
+    log "SUCCESS" "Unzipped to proxy-data/metacubexd"
     # strip the first directory layer
     shopt -s nullglob dotglob
     local unarchived_file_list=("proxy-data/metacubexd/"*)
@@ -362,7 +365,7 @@ download_geodata_if_necessary() {
         if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOSITE_DOWNLOAD_URL" --output "proxy-data/config/geosite.dat"; then
             log "WARN" "Failed to download geosite"
         else
-            log "INFO" "Downloaded to proxy-data/config/geosite.dat"
+            log "SUCCESS" "Downloaded to proxy-data/config/geosite.dat"
         fi
         log_sublevel_end
     fi
@@ -376,7 +379,7 @@ download_geodata_if_necessary() {
         if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOIP_DOWNLOAD_URL" --output "proxy-data/config/geoip.dat"; then
             log "WARN" "Failed to download geoip"
         else
-            log "INFO" "Downloaded to proxy-data/config/geoip.dat"
+            log "SUCCESS" "Downloaded to proxy-data/config/geoip.dat"
         fi
         log_sublevel_end
     fi
@@ -538,7 +541,7 @@ download_subscription() {
 
     # Save to file only if download is successful
     echo "$temp_config" > "proxy-data/config/config.yaml"
-    log "INFO" "Downloaded to proxy-data/config/config.yaml"
+    log "SUCCESS" "Downloaded to proxy-data/config/config.yaml"
     
     log_sublevel_end
 }
@@ -560,7 +563,7 @@ read_config_from_stdin() {
     # Check if input is not empty (ignore whitespace-only content)
     if [[ -n "${temp_config// }" ]] && [[ -n "${temp_config//$'\n'}" ]]; then
         echo "$temp_config" > "proxy-data/config/config.yaml"
-        log "INFO" "Config saved to proxy-data/config/config.yaml"
+        log "SUCCESS" "Config saved to proxy-data/config/config.yaml"
         return 0
     else
         return 1
@@ -632,7 +635,7 @@ unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY all_proxy ALL_PROXY
 EOF
 
     chmod +x "proxy-data/on" "proxy-data/off"
-    log "INFO" "${COLOR_BOLD}Environment setup script written to proxy-data/on and proxy-data/off${COLOR_NORMAL}"
+    log "SUCCESS" "${COLOR_BOLD}Environment setup script written to proxy-data/on and proxy-data/off${COLOR_NORMAL}"
     log "INFO" "Note: You can ${COLOR_UNDERLINE}source proxy-data/on${COLOR_NORMAL} to set up the proxy environment, and ${COLOR_UNDERLINE}source proxy-data/off${COLOR_NORMAL} to unset it."
 }
 
@@ -718,7 +721,7 @@ main() {
     fi
     daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(realpath proxy-data/metacubexd)"
 
-    log "INFO" "${COLOR_BOLD}Mihomo started in the background!${COLOR_NORMAL}"
+    log "SUCCESS" "${COLOR_BOLD}Mihomo started in the background!${COLOR_NORMAL}"
     log "INFO" "Note: You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui${COLOR_NORMAL}. Use ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/${COLOR_NORMAL} as the control server address in the WebUI."
     
     if is_config_valid "proxy-data/config/config.yaml"; then
