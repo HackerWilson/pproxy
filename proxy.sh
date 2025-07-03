@@ -592,6 +592,50 @@ handle_subscription_config() {
     fi
 }
 
+# Parse the `mixed-port`` (or fall back to `port` if not set) in the config file
+parse_mixed_port() {
+    local config_file="$1"
+    local mixed_port
+    # Use grep to find the mixed-port or port line
+    mixed_port=$(grep --extended-regexp '^\s*mixed-port:\s*[0-9]+' "$config_file" | awk '{print $2}')
+    if [[ -z "$mixed_port" ]]; then
+        mixed_port=$(grep --extended-regexp '^\s*port:\s*[0-9]+' "$config_file" | awk '{print $2}')
+    fi
+    if [[ -z "$mixed_port" ]]; then
+        return 1  # No mixed-port or port found
+    fi
+    echo "$mixed_port"
+    return 0
+}
+
+# Write out the environment setup script which can be sourced to set up the proxy, and print usage instructions
+write_out_env_setup_script() {
+    local mixed_port="$1"
+
+    cat > "proxy-data/on" <<-EOF
+#!/bin/bash
+# Environment setup script for proxy.sh
+export http_proxy="http://127.0.0.1:$mixed_port"
+export HTTP_PROXY=\$http_proxy
+
+export https_proxy=\$http_proxy
+export HTTPS_PROXY=\$http_proxy
+
+export all_proxy=\$http_proxy
+export ALL_PROXY=\$http_proxy
+EOF
+    
+    cat > "proxy-data/off" <<-EOF
+#!/bin/bash
+# Environment teardown script for proxy.sh
+unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY all_proxy ALL_PROXY
+EOF
+
+    chmod +x "proxy-data/on" "proxy-data/off"
+    log "INFO" "${COLOR_BOLD}Environment setup script written to proxy-data/on and proxy-data/off${COLOR_NORMAL}"
+    log "INFO" "Note: You can ${COLOR_UNDERLINE}source proxy-data/on${COLOR_NORMAL} to set up the proxy environment, and ${COLOR_UNDERLINE}source proxy-data/off${COLOR_NORMAL} to unset it."
+}
+
 main() {
     if setup_color_support; then
         log "DEBUG" "Terminal supports color"
@@ -682,6 +726,16 @@ main() {
     else
         log "WARN" "Config file is not found or invalid. You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo."
     fi
+
+    local mihomo_mixed_port=""
+    if mihomo_mixed_port=$(parse_mixed_port "proxy-data/config/config.yaml"); then
+        log "INFO" "Mihomo mixed-port is set to: $mihomo_mixed_port"
+        write_out_env_setup_script "$mihomo_mixed_port"
+    else
+        log "WARN" "Mihomo mixed-port is not set in the config file. You may need to set it manually in proxy-data/config/config.yaml and restart Mihomo."
+        log "WARN" "The environment setup script is not written."
+    fi
+    
     me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
     log "INFO" "To stop Mihomo, run: $me stop"
 
