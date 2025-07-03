@@ -26,7 +26,7 @@ COLOR_UNDERLINE=""
 COLOR_BOLD=""
 setup_color_support() {
     # check if the stdout is a terminal
-    if [ ! -t 1 ]; then
+    if [[ ! -t 1 ]]; then
         return 1
     fi
     # check if the terminal supports color
@@ -35,7 +35,7 @@ setup_color_support() {
     fi
     local ncolors
     ncolors=$(tput colors)
-    if [ "$ncolors" -lt 8 ]; then
+    if [[ "$ncolors" -lt 8 ]]; then
         return 1
     fi
     # get color codes
@@ -71,7 +71,7 @@ log() {
         level="${COLOR_NORMAL}$level${COLOR_NORMAL}"
         ;;
     esac
-    if [ $LOG_INDENT -eq 0 ]; then
+    if [[ $LOG_INDENT -eq 0 ]]; then
         printf "[%s] %s\n" "$level" "$message" >&2
     else
         local minus_count=$((LOG_INDENT - 3)) # how many "-"s in " -> "
@@ -94,7 +94,7 @@ log_sublevel_end() {
 # Returns: 0 if <dependency command> is provided and exists, 1 if it doesn't exist.
 # If <dependency command> is not provided, checks all dependencies in TOOL_DEPS and UNZIP_DEP_ALTERNATIVES. Exit directly if any of them is not found.
 check_dep() {
-    if [ "$#" -gt 0 ]; then
+    if [[ "$#" -gt 0 ]]; then
         # Check specific dependency
         local dep="$1"
         if ! command -v "$dep" >/dev/null 2>&1; then
@@ -115,7 +115,7 @@ check_dep() {
             break
         fi
     done
-    if [ "$UNZIP_DEP" == "UNSET" ]; then
+    if [[ "$UNZIP_DEP" == "UNSET" ]]; then
         log "ERROR" "No unzip tool found. Please install one of the following: ${UNZIP_DEP_ALTERNATIVES[*]}."
         exit 1
     fi
@@ -149,7 +149,7 @@ smart_unzip() {
 
 FASTEST_GITHUB_PROXY="UNSET"
 github_proxy_select() {
-    if [ "$FASTEST_GITHUB_PROXY" != "UNSET" ]; then
+    if [[ "$FASTEST_GITHUB_PROXY" != "UNSET" ]]; then
         # Already selected
         return
     fi
@@ -161,7 +161,7 @@ github_proxy_select() {
         local curl_time
         if ! curl_time=$(curl --silent --fail --location --output /dev/null --max-time 3 --write-out "%{time_total}" "$proxy$GITHUB_SPEEDTEST_URL"); then
             # if return error, skip
-            if [ "$proxy" == "" ]; then
+            if [[ "$proxy" == "" ]]; then
                 log "ERROR" "Direct connection is not available"
             else
                 log "ERROR" "Proxy '$proxy' is not available"
@@ -169,24 +169,24 @@ github_proxy_select() {
             continue
         fi
 
-        if [ -z "$proxy" ]; then
+        if [[ -z "$proxy" ]]; then
             log "INFO" "Direct connection time: $curl_time s"
         else
             log "INFO" "Proxy '$proxy' time: $curl_time s"
         fi
 
-        if [ "$(compare_floats "$curl_time" "$min_time")" == "<" ]; then
+        if [[ "$(compare_floats "$curl_time" "$min_time")" == "<" ]]; then
             min_time="$curl_time"
             FASTEST_GITHUB_PROXY="$proxy"
             # log "DEBUG" "Current fastest proxy: $FASTEST_GITHUB_PROXY ($min_time s)"
         fi
     done
-    if [ "$FASTEST_GITHUB_PROXY" == "UNSET" ]; then
+    if [[ "$FASTEST_GITHUB_PROXY" == "UNSET" ]]; then
         log "ERROR" "No GitHub proxy available"
         exit 1
     fi
     log_sublevel_end
-    if [ -z "$FASTEST_GITHUB_PROXY" ]; then
+    if [[ -z "$FASTEST_GITHUB_PROXY" ]]; then
         log "INFO" "Fastest GitHub proxy: Direct connection"
         return
     else
@@ -253,7 +253,7 @@ download_mihomo() {
         log "ERROR" "Failed to fetch the latest release info"
         exit 1
     fi
-    if [ -z "$mihomo_latest_version" ]; then
+    if [[ -z "$mihomo_latest_version" ]]; then
         log "ERROR" "The latest release info is empty"
         exit 1
     fi
@@ -291,9 +291,9 @@ download_mihomo() {
 }
 
 mihomo_exist() {
-    if [ -s "proxy-data/mihomo" ]; then
+    if [[ -s "proxy-data/mihomo" ]]; then
         # Check if mihomo is executable
-        if [ ! -x "proxy-data/mihomo" ]; then
+        if [[ ! -x "proxy-data/mihomo" ]]; then
             if ! chmod +x "proxy-data/mihomo"; then
                 log "ERROR" "Mihomo exists but not executable and we failed to make it executable"
                 exit 1
@@ -333,7 +333,7 @@ download_metacubexd() {
         log "ERROR" "Failed to unzip metacubexd"
         exit 1
     fi
-    if [ ! -d "proxy-data/metacubexd/" ]; then
+    if [[ ! -d "proxy-data/metacubexd/" ]]; then
         log "ERROR" "Failed to unzip metacubexd"
         exit 1
     fi
@@ -341,7 +341,7 @@ download_metacubexd() {
     # strip the first directory layer
     shopt -s nullglob dotglob
     local unarchived_file_list=("proxy-data/metacubexd/"*)
-    if ((${#unarchived_file_list[@]} == 1)) && [ -d "${unarchived_file_list[0]}" ]; then
+    if [[ ${#unarchived_file_list[@]} -eq 1 ]] && [[ -d "${unarchived_file_list[0]}" ]]; then
         log "INFO" "Stripping the first directory layer..."
         mv "${unarchived_file_list[0]}"/* "proxy-data/metacubexd/"
         rmdir "${unarchived_file_list[0]}"
@@ -353,7 +353,7 @@ download_metacubexd() {
 }
 
 download_geodata_if_necessary() {
-    if [ ! -f "proxy-data/config/geosite.dat" ]; then
+    if [[ ! -f "proxy-data/config/geosite.dat" ]]; then
         github_proxy_select
         log "INFO" "Downloading geosite..."
         log_sublevel_start
@@ -367,7 +367,7 @@ download_geodata_if_necessary() {
         log_sublevel_end
     fi
 
-    if [ ! -f "proxy-data/config/geoip.dat" ]; then
+    if [[ ! -f "proxy-data/config/geoip.dat" ]]; then
         github_proxy_select
         log "INFO" "Downloading geoip..."
         log_sublevel_start
@@ -387,7 +387,7 @@ mihomo_status() {
     log_sublevel_start
 
     find_by_tag mihomo
-    if [ "${#TAGGED_PIDS[@]}" -gt 0 ]; then
+    if [[ "${#TAGGED_PIDS[@]}" -gt 0 ]]; then
         log "INFO" "Mihomo is running with pids: ${TAGGED_PIDS[*]}"
     else
         log "INFO" "Mihomo is not running"
@@ -425,7 +425,7 @@ kill_by_tag() {
     local tag=$1
     find_by_tag "$tag"
 
-    if [ "${#TAGGED_PIDS[@]}" -gt 0 ]; then
+    if [[ "${#TAGGED_PIDS[@]}" -gt 0 ]]; then
         log "INFO" "Killing pids: ${TAGGED_PIDS[*]}"
         kill -SIGTERM "${TAGGED_PIDS[@]}"
         return 0
@@ -464,7 +464,7 @@ EOF
 }
 
 arg_parse() {
-    if [ "$#" -eq 0 ]; then
+    if [[ "$#" -eq 0 ]]; then
         return 0
     fi
 
@@ -480,7 +480,7 @@ arg_parse() {
         return 2
         ;;
     tunnel)
-        if [ "$#" -ne 2 ]; then
+        if [[ "$#" -ne 2 ]]; then
             log "ERROR" "Usage: $0 tunnel <port>"
             exit 1
         fi
@@ -507,7 +507,7 @@ readonly MIHOMO_USER_AGENT="mihomo.proxy.sh/v1.0 (clash.meta)"
 download_subscription() {
     local subscription_url="$1"
     
-    if [ "$subscription_url" == "-" ]; then
+    if [[ "$subscription_url" == "-" ]]; then
         log "INFO" "Reading subscription from stdin..."
         log_sublevel_start
         
@@ -570,7 +570,7 @@ read_config_from_stdin() {
 handle_subscription_config() {
     local subscription_url="$1"
     
-    if [ -n "$subscription_url" ]; then
+    if [[ -n "$subscription_url" ]]; then
         # URL provided (including "-" for stdin), always process regardless of existing config
         download_subscription "$subscription_url"
     else
@@ -599,8 +599,8 @@ main() {
         log "DEBUG" "Terminal does not support color"
     fi
 
-    if [ "$EUID" -eq 0 ]; then
-        if [ ! -f "proxy-data/do_as_root" ]; then
+    if [[ "$EUID" -eq 0 ]]; then
+        if [[ ! -f "proxy-data/do_as_root" ]]; then
             log "WARN" "You are running this script as root. This is usually NOT recommended because of security and permission issues."
             log "WARN" "Please run this script as a normal user if possible."
             read -p "[QUESTION] Do you REALLY want to continue as root? (y/n) " -n 1 -r continue_choice
@@ -652,7 +652,7 @@ main() {
         download_mihomo
     fi
 
-    if [ -d "proxy-data/metacubexd/" ]; then
+    if [[ -d "proxy-data/metacubexd/" ]]; then
         log "INFO" "metacubexd already exists, skip downloading."
     else
         github_proxy_select
