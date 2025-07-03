@@ -675,7 +675,7 @@ main() {
     daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(realpath proxy-data/metacubexd)"
 
     log "INFO" "${COLOR_BOLD}Mihomo started in the background!${COLOR_NORMAL}"
-    log "INFO" "You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui${COLOR_NORMAL}. Use ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/${COLOR_NORMAL} as the control server address in the WebUI."
+    log "INFO" "Note: You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui${COLOR_NORMAL}. Use ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/${COLOR_NORMAL} as the control server address in the WebUI."
     
     if is_config_valid "proxy-data/config/config.yaml"; then
         log "INFO" "Config file is ready at proxy-data/config/config.yaml"
