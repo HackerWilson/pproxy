@@ -9,7 +9,7 @@ fi
 
 set -u # Exit on unset variables
 
-readonly TOOL_DEPS=(curl gzip chmod setsid grep kill realpath)
+readonly TOOL_DEPS=(curl gzip chmod setsid grep kill realpath ps)
 readonly UNZIP_DEP_ALTERNATIVES=(unzip 7z bsdtar python3 jar)
 UNZIP_DEP="UNSET"
 readonly GITHUB_PROXIES=(
@@ -406,24 +406,35 @@ daemon_run() {
     shift
     local output_file=$1
     shift
+    local process_name_with_tag="proxy-sh-${tag}"
     # https://stackoverflow.com/questions/3430330/best-way-to-make-a-shell-script-daemon
     (
         umask 0
-        _TAG="$tag" setsid "$@" </dev/null &>>"$output_file" &
+        # shellcheck disable=SC2016
+        # Safety: should use single quotes here because we intend not to expand variables.
+        setsid "$SHELL" -c 'exec -a "$1" "${@:2}"' _ "$process_name_with_tag" "$@" </dev/null &>>"$output_file" &
     ) &
 }
 
 TAGGED_PIDS=()
 find_by_tag() {
     local tag=$1
-    local grepped_files
-    grepped_files=$(grep --files-with-matches "\b_TAG=$tag\b" /proc/[0-9]*/environ 2>/dev/null)
+    local process_name_with_tag="proxy-sh-${tag}"
     TAGGED_PIDS=()
-    while read -r grepped_file; do
-        if [[ "$grepped_file" =~ /proc/([0-9]+)/environ ]]; then
-            TAGGED_PIDS+=("${BASH_REMATCH[1]}")
+    while IFS= read -r line; do
+        local pid
+        # read the first non-whitespace word
+        read -r pid _ <<< "$line"
+        
+        # Skip the table header
+        if ! [[ "$pid" =~ ^[0-9]+$ ]]; then
+            continue
         fi
-    done <<<"$grepped_files"
+        
+        if [[ "$line" == *"$process_name_with_tag"* ]]; then
+            TAGGED_PIDS+=("$pid")
+        fi
+    done < <(ps ax -o pid,command)
 }
 
 kill_by_tag() {
