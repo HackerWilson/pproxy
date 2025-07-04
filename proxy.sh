@@ -7,7 +7,9 @@ if [ -z "$BASH_VERSION" ]; then
     exit 1
 fi
 
-readonly TOOL_DEPS=(curl gzip chmod setsid grep kill)
+set -u # Exit on unset variables
+
+readonly TOOL_DEPS=(curl gzip chmod setsid grep kill realpath)
 readonly UNZIP_DEP_ALTERNATIVES=(unzip 7z bsdtar python3 jar)
 UNZIP_DEP="UNSET"
 readonly GITHUB_PROXIES=(
