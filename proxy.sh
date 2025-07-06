@@ -607,7 +607,7 @@ handle_subscription_config() {
 # Parse the `mixed-port`` (or fall back to `port` if not set) in the config file
 parse_mixed_port() {
     local config_file="$1"
-    local mixed_port
+    local mixed_port=""
     while IFS= read -r line; do
         # Check for mixed-port: first
         if [[ "$line" == *"mixed-port:"* ]]; then
