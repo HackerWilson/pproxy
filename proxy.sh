@@ -15,7 +15,7 @@ UNZIP_DEP="UNSET"
 readonly GITHUB_PROXIES=(
     "" # Direct connection
     https://github.akams.cn/
-    https://github.moeyy.xyz/
+    https://gh-proxy.net/
     https://tvv.tw/
 )
 readonly GITHUB_SPEEDTEST_URL="https://raw.githubusercontent.com/microsoft/vscode/main/LICENSE.txt"
