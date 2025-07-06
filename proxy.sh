@@ -608,7 +608,6 @@ handle_subscription_config() {
 parse_mixed_port() {
     local config_file="$1"
     local mixed_port
-    # Use grep to find the mixed-port or port line
     while IFS= read -r line; do
         # Check for mixed-port: first
         if [[ "$line" == *"mixed-port:"* ]]; then
@@ -848,7 +847,7 @@ compare_floats() {
     local num2_orig="$2"
     local result=""
 
-    # --- Basic Input Validation (Optional but Recommended) ---
+    # --- Basic Input Validation ---
     local float_regex='^-?[0-9]*(\.[0-9]*)?$|^-?\.([0-9]+)$' # Allow empty integer part like .5
     if ! [[ "$num1_orig" =~ $float_regex ]]; then
         echo "Error: Invalid number format for first argument: '$num1_orig'" >&2
@@ -909,7 +908,6 @@ compare_floats() {
         local comp1="${int1}${frac1}"
         local comp2="${int2}${frac2}"
 
-        # --- **CRITICAL FIX AREA** ---
         # Remove leading zeros BEFORE integer comparison to avoid octal issues and ensure correct base-10 comparison
         comp1="${comp1#"${comp1%%[!0]*}"}" # Remove leading zeros
         comp2="${comp2#"${comp2%%[!0]*}"}" # Remove leading zeros
@@ -919,13 +917,11 @@ compare_floats() {
 
         # --- Compare the resulting numbers using Bash INTEGER comparison ---
         local cmp_result=""
-        # Note: Using [[ ]] with arithmetic operators is safer than (( )) or [ ]
         if [[ "$comp1" -lt "$comp2" ]]; then
             cmp_result="<"
         elif [[ "$comp1" -gt "$comp2" ]]; then
             cmp_result=">"
         else cmp_result="="; fi
-        # --- End Critical Fix Area ---
 
         # --- Adjust result if both numbers were negative ---
         if [[ "$sign1" == "-" ]]; then # (implies sign2 is also "-")
