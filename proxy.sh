@@ -613,10 +613,22 @@ parse_mixed_port() {
     local config_file="$1"
     local mixed_port
     # Use grep to find the mixed-port or port line
-    mixed_port=$(grep --extended-regexp '^\s*mixed-port:\s*[0-9]+' "$config_file" | awk '{print $2}')
-    if [[ -z "$mixed_port" ]]; then
-        mixed_port=$(grep --extended-regexp '^\s*port:\s*[0-9]+' "$config_file" | awk '{print $2}')
-    fi
+    while IFS= read -r line; do
+        # Check for mixed-port: first
+        if [[ "$line" == *"mixed-port:"* ]]; then
+            mixed_port="${line#*mixed-port:}"
+            mixed_port="${mixed_port// /}"
+            mixed_port="${mixed_port%%[^0-9]*}"
+            break
+        fi
+        
+        # If no mixed-port found, check for port:
+        if [[ -z "$mixed_port" && "$line" == *"port:"* ]]; then
+            mixed_port="${line#*port:}"
+            mixed_port="${mixed_port// /}"
+            mixed_port="${mixed_port%%[^0-9]*}"
+        fi
+    done < "$config_file"
     if [[ -z "$mixed_port" ]]; then
         return 1  # No mixed-port or port found
     fi
