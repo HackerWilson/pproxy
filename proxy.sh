@@ -216,7 +216,6 @@ github_proxy_select() {
     echo
     log "INFO" "Please select a GitHub proxy:"
     log "INFO" "Available options:"
-    log "DEBUG" "Available proxies: ${available_proxy_indices[*]}"
     for i in "${!available_proxy_indices[@]}"; do
         local idx="${available_proxy_indices[$i]}"
         local proxy="${GITHUB_PROXIES[$idx]}"
