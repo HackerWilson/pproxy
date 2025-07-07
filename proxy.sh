@@ -199,7 +199,7 @@ github_proxy_select() {
         times+=("$curl_time")
         available_proxies+=("$proxy")
         available_proxy_indices+=("$i")
-
+        
         if [[ "$(compare_floats "$curl_time" "$min_time")" == "<" ]]; then
             min_time="$curl_time"
             min_index="$i"
@@ -693,6 +693,9 @@ handle_subscription_config() {
 # Parse the `mixed-port`` (or fall back to `port` if not set) in the config file
 parse_mixed_port() {
     local config_file="$1"
+    if [[ ! -f "$config_file" ]]; then
+        return 1
+    fi
     local mixed_port=""
     while IFS= read -r line; do
         # Check for mixed-port: first
