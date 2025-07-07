@@ -54,37 +54,37 @@ setup_color_support() {
 # Usage: log "level" "message"
 LOG_INDENT=0
 log() {
-    local level="$1"
-    local message="$2"
-    case "$level" in
+    local _log_level="$1"
+    local _log_message="$2"
+    case "$_log_level" in
     "DEBUG")
-        level="${COLOR_GREEN}DEBUG${COLOR_NORMAL}"
+        _log_level="${COLOR_GREEN}DEBUG${COLOR_NORMAL}"
         ;;
     "INFO")
-        level="${COLOR_GREEN}INFO${COLOR_NORMAL}"
+        _log_level="${COLOR_GREEN}INFO${COLOR_NORMAL}"
         ;;
     "SUCCESS")
-        level="${COLOR_GREEN}SUCCESS${COLOR_NORMAL}"
+        _log_level="${COLOR_GREEN}SUCCESS${COLOR_NORMAL}"
         ;;
     "WARN")
-        level="${COLOR_YELLOW}WARN${COLOR_NORMAL}"
+        _log_level="${COLOR_YELLOW}WARN${COLOR_NORMAL}"
         ;;
     "ERROR")
-        level="${COLOR_RED}ERROR${COLOR_NORMAL}"
+        _log_level="${COLOR_RED}ERROR${COLOR_NORMAL}"
         ;;
     *)
-        level="${COLOR_NORMAL}$level${COLOR_NORMAL}"
+        _log_level="${COLOR_NORMAL}$_log_level${COLOR_NORMAL}"
         ;;
     esac
     if [[ $LOG_INDENT -eq 0 ]]; then
-        printf "[%s] %s\n" "$level" "$message" >&2
+        printf "[%s] %s\n" "$_log_level" "$_log_message" >&2
     else
-        local minus_count=$((LOG_INDENT - 3)) # how many "-"s in " -> "
-        printf "[%s] " "$level" >&2
-        for ((i = 0; i < minus_count; i++)); do
+        local _log_minus_count=$((LOG_INDENT - 3)) # how many "-"s in " -> "
+        printf "[%s] " "$_log_level" >&2
+        for (( _log_i = 0; _log_i < _log_minus_count; _log_i++ )); do
             printf "-" >&2
         done
-        printf "> %s\n" "$message" >&2
+        printf "> %s\n" "$_log_message" >&2
     fi
 }
 log_sublevel_start() { (( LOG_INDENT += 4 )) }
@@ -155,43 +155,115 @@ github_proxy_select() {
         return
     fi
 
-    log "INFO" "Selecting fastest GitHub proxy..."
-    log_sublevel_start
-    local min_time=10.0
-    for proxy in "${GITHUB_PROXIES[@]}"; do
-        local curl_time
-        if ! curl_time=$(curl --silent --fail --location --output /dev/null --max-time 3 --write-out "%{time_total}" "$proxy$GITHUB_SPEEDTEST_URL"); then
-            # if return error, skip
-            if [[ "$proxy" == "" ]]; then
-                log "ERROR" "Direct connection is not available"
+    # Check if persistent selection exists
+    if [[ -f "proxy-data/github_proxy_selection" ]]; then
+        local selection
+        selection=$(<"proxy-data/github_proxy_selection")
+        if [[ -n "$selection" ]]; then
+            # Use the persistent selection
+            if [[ "$selection" =~ ^[0-9]+$ ]]; then
+                if [[ $selection -ge 0 && $selection -lt ${#GITHUB_PROXIES[@]} ]]; then
+                    FASTEST_GITHUB_PROXY="${GITHUB_PROXIES[$selection]}"
+                    log "INFO" "Using saved GitHub proxy selection: ${FASTEST_GITHUB_PROXY:-Direct connection}"
+                    return
+                fi
             else
-                log "ERROR" "Proxy '$proxy' is not available"
+                log "ERROR" "Invalid saved GitHub proxy selection: $selection. Removing it."
+                rm --force "proxy-data/github_proxy_selection"
             fi
+        fi
+    fi
+
+    log "INFO" "Testing GitHub proxy speeds..."
+    log_sublevel_start
+    
+    local min_time=10.0
+    local min_index=0
+    local times=()
+    local available_proxies=()
+    local available_proxy_indices=()
+
+    # Test each proxy
+    for i in "${!GITHUB_PROXIES[@]}"; do
+        local proxy="${GITHUB_PROXIES[$i]}"
+        local curl_time
+        local proxy_name="${proxy:-Direct connection}"
+        
+        if ! curl_time=$(curl --silent --fail --location --output /dev/null --max-time 3 --write-out "%{time_total}" "$proxy$GITHUB_SPEEDTEST_URL"); then
+            log "WARN" "Proxy '$proxy_name' is not available"
+            times+=("N/A")
             continue
         fi
 
-        if [[ -z "$proxy" ]]; then
-            log "INFO" "Direct connection time: $curl_time s"
-        else
-            log "INFO" "Proxy '$proxy' time: $curl_time s"
-        fi
+        log "INFO" "Proxy '$proxy_name' time: $curl_time s"
+        times+=("$curl_time")
+        available_proxies+=("$proxy")
+        available_proxy_indices+=("$i")
 
         if [[ "$(compare_floats "$curl_time" "$min_time")" == "<" ]]; then
             min_time="$curl_time"
-            FASTEST_GITHUB_PROXY="$proxy"
-            # log "DEBUG" "Current fastest proxy: $FASTEST_GITHUB_PROXY ($min_time s)"
+            min_index="$i"
         fi
     done
-    if [[ "$FASTEST_GITHUB_PROXY" == "UNSET" ]]; then
+    log_sublevel_end
+    
+    if [[ ${#available_proxies[@]} -eq 0 ]]; then
         log "ERROR" "No GitHub proxy available"
         exit 1
     fi
-    log_sublevel_end
-    if [[ -z "$FASTEST_GITHUB_PROXY" ]]; then
-        log "SUCCESS" "Fastest GitHub proxy: Direct connection"
-        return
+    
+    # Display options to user
+    echo
+    log "INFO" "Please select a GitHub proxy:"
+    log "INFO" "Available options:"
+    log "DEBUG" "Available proxies: ${available_proxy_indices[*]}"
+    for i in "${!available_proxy_indices[@]}"; do
+        local idx="${available_proxy_indices[$i]}"
+        local proxy="${GITHUB_PROXIES[$idx]}"
+        local proxy_name="${proxy:-Direct connection}"
+        log "INFO" "  $idx) $proxy_name (${times[$idx]} s)$([ "$idx" -eq "$min_index" ] && echo " (fastest)" || echo "")"
+    done
+    log "INFO" "Input options:"
+    log "INFO" "  <number>   = Select this proxy for current session"
+    log "INFO" "  <number>!  = Select this proxy and remember for future sessions"
+    log "INFO" "  <empty>    = Use fastest proxy for current session"
+    log "INFO" "  !          = Use fastest proxy and remember for future sessions"
+    
+    # Ask for user selection
+    read -p "[QUESTION] Your choice: " -r user_choice
+    
+    # Process the selection
+    local persistent=0
+    if [[ "$user_choice" == *"!"* ]]; then
+        persistent=1
+        user_choice="${user_choice%!}"
+    fi
+    
+    if [[ -z "$user_choice" ]]; then
+        # Empty input, use fastest
+        FASTEST_GITHUB_PROXY="${GITHUB_PROXIES[$min_index]}"
+        log "SUCCESS" "Selected fastest GitHub proxy: ${FASTEST_GITHUB_PROXY:-Direct connection}"
+        if [[ $persistent -eq 1 ]]; then
+            mkdir --parents "proxy-data/"
+            echo "$min_index" > "proxy-data/github_proxy_selection"
+            log "INFO" "Note: This selection will be remembered for future sessions. If you want to reset, delete the ${COLOR_UNDERLINE}proxy-data/github_proxy_selection${COLOR_NORMAL} file."
+        fi
+    elif [[ "$user_choice" =~ ^[0-9]+$ ]]; then
+        if [[ $user_choice -ge 0 && $user_choice -lt ${#GITHUB_PROXIES[@]} ]]; then
+            FASTEST_GITHUB_PROXY="${GITHUB_PROXIES[$user_choice]}"
+            log "SUCCESS" "Selected GitHub proxy: ${FASTEST_GITHUB_PROXY:-Direct connection}"
+            if [[ $persistent -eq 1 ]]; then
+                mkdir --parents "proxy-data/"
+                echo "$user_choice" > "proxy-data/github_proxy_selection"
+                log "INFO" "This selection will be remembered for future sessions"
+            fi
+        else
+            log "ERROR" "Invalid selection. Using fastest proxy."
+            FASTEST_GITHUB_PROXY="${GITHUB_PROXIES[$min_index]}"
+        fi
     else
-        log "SUCCESS" "Fastest GitHub proxy: $FASTEST_GITHUB_PROXY"
+        log "ERROR" "Invalid selection. Using fastest proxy."
+        FASTEST_GITHUB_PROXY="${GITHUB_PROXIES[$min_index]}"
     fi
 }
 
