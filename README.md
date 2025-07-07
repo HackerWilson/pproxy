@@ -61,8 +61,8 @@ $ bash proxy.sh help 或 $ bash proxy.sh -h 或 $ bash proxy.sh --help
 
 - `proxy.sh` 仅支持 Clash / Clash Meta / Mihomo 的配置文件格式，从你的代理服务商获取配置文件时请注意。
 
-## TODO
+## 为什么是英文的？
 
-- [x] 下载订阅配置文件
-- [x] 自动配置 WebUI 端口映射，方便在 SSH 服务器上使用
-- [x] 支持 help、status、restart、tunnel 子命令
+1. 方便在某些中文不支持的环境中使用
+2. 我懒。都是高中英语，应该不至于看不懂吧
+3. 如果你真看不懂，也有国际化支持的打算，欢迎 PR
