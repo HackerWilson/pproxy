@@ -356,7 +356,7 @@ download_metacubexd() {
 download_geodata_if_necessary() {
     if [[ ! -f "proxy-data/config/geosite.dat" ]]; then
         github_proxy_select
-        log "INFO" "Downloading geosite..."
+        log "INFO" "Downloading geosite.dat..."
         log_sublevel_start
         readonly MIHOMO_GEOSITE_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
         log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOSITE_DOWNLOAD_URL${COLOR_NORMAL}"
@@ -370,7 +370,7 @@ download_geodata_if_necessary() {
 
     if [[ ! -f "proxy-data/config/geoip.dat" ]]; then
         github_proxy_select
-        log "INFO" "Downloading geoip..."
+        log "INFO" "Downloading geoip.dat..."
         log_sublevel_start
         readonly MIHOMO_GEOIP_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
         log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOIP_DOWNLOAD_URL${COLOR_NORMAL}"
@@ -378,6 +378,20 @@ download_geodata_if_necessary() {
             log "WARN" "Failed to download geoip"
         else
             log "SUCCESS" "Downloaded to proxy-data/config/geoip.dat"
+        fi
+        log_sublevel_end
+    fi
+
+    if [[ ! -f "proxy-data/config/geoip.metadb" ]]; then
+        github_proxy_select
+        log "INFO" "Downloading geoip.metadb..."
+        log_sublevel_start
+        readonly MIHOMO_GEOIP_METADB_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb"
+        log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOIP_METADB_DOWNLOAD_URL${COLOR_NORMAL}"
+        if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOIP_METADB_DOWNLOAD_URL" --output "proxy-data/config/geoip.metadb"; then
+            log "WARN" "Failed to download geoip.metadb"
+        else
+            log "SUCCESS" "Downloaded to proxy-data/config/geoip.metadb"
         fi
         log_sublevel_end
     fi
