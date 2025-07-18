@@ -266,6 +266,22 @@ github_proxy_select() {
     fi
 }
 
+# Download something with Ctrl+C trap.
+# If the download is interrupted, it will clean up the partially downloaded file.
+# Usage: download_with_cleanup <url> <output_file>
+download_with_cleanup() {
+    local url="$1"
+    local output_file="$2"
+
+    trap 'rm --force "$output_file"; echo; log "ERROR" "Download interrupted. Cleaned up partially downloaded file: $output_file"; exit 1' INT
+    curl --fail --location "$url" --output "$output_file"
+    local _status="$?"
+    # Remove the trap
+    trap - INT
+
+    return $_status
+}
+
 # Obtain Mihomo-specific OS name to build the download URL
 obtain_mihomo_os() {
     local mihomo_os
@@ -338,7 +354,7 @@ download_mihomo() {
     # shellcheck disable=SC2155
     readonly MIHOMO_DOWNLOAD_URL="https://github.com/MetaCubeX/mihomo/releases/download/$mihomo_latest_version/mihomo-$(obtain_mihomo_os)-$(obtain_mihomo_arch)-$mihomo_latest_version.gz"
     log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_DOWNLOAD_URL${COLOR_NORMAL}"
-    if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_DOWNLOAD_URL" --output "proxy-data/mihomo.gz"; then
+    if ! download_with_cleanup "$FASTEST_GITHUB_PROXY$MIHOMO_DOWNLOAD_URL" "proxy-data/mihomo.gz"; then
         log "ERROR" "Failed to download Mihomo"
         exit 1
     fi
@@ -390,7 +406,7 @@ download_metacubexd() {
     log "INFO" "Downloading..."
     log_sublevel_start
     log "INFO" "Download from: ${COLOR_UNDERLINE}$METACUBEXD_DOWNLOAD_URL${COLOR_NORMAL}"
-    if ! curl --fail --location "$FASTEST_GITHUB_PROXY$METACUBEXD_DOWNLOAD_URL" --output "proxy-data/metacubexd.zip"; then
+    if ! download_with_cleanup "$FASTEST_GITHUB_PROXY$METACUBEXD_DOWNLOAD_URL" "proxy-data/metacubexd.zip"; then
         log "ERROR" "Failed to download metacubexd"
         exit 1
     fi
@@ -431,7 +447,7 @@ download_geodata_if_necessary() {
         log_sublevel_start
         readonly MIHOMO_GEOSITE_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
         log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOSITE_DOWNLOAD_URL${COLOR_NORMAL}"
-        if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOSITE_DOWNLOAD_URL" --output "proxy-data/config/geosite.dat"; then
+        if ! download_with_cleanup "$FASTEST_GITHUB_PROXY$MIHOMO_GEOSITE_DOWNLOAD_URL" "proxy-data/config/geosite.dat"; then
             log "WARN" "Failed to download geosite"
         else
             log "SUCCESS" "Downloaded to proxy-data/config/geosite.dat"
@@ -445,7 +461,7 @@ download_geodata_if_necessary() {
         log_sublevel_start
         readonly MIHOMO_GEOIP_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
         log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOIP_DOWNLOAD_URL${COLOR_NORMAL}"
-        if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOIP_DOWNLOAD_URL" --output "proxy-data/config/geoip.dat"; then
+        if ! download_with_cleanup "$FASTEST_GITHUB_PROXY$MIHOMO_GEOIP_DOWNLOAD_URL" "proxy-data/config/geoip.dat"; then
             log "WARN" "Failed to download geoip"
         else
             log "SUCCESS" "Downloaded to proxy-data/config/geoip.dat"
@@ -459,7 +475,7 @@ download_geodata_if_necessary() {
         log_sublevel_start
         readonly MIHOMO_GEOIP_METADB_DOWNLOAD_URL="https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb"
         log "INFO" "Download from: ${COLOR_UNDERLINE}$MIHOMO_GEOIP_METADB_DOWNLOAD_URL${COLOR_NORMAL}"
-        if ! curl --fail --location "$FASTEST_GITHUB_PROXY$MIHOMO_GEOIP_METADB_DOWNLOAD_URL" --output "proxy-data/config/geoip.metadb"; then
+        if ! download_with_cleanup "$FASTEST_GITHUB_PROXY$MIHOMO_GEOIP_METADB_DOWNLOAD_URL" "proxy-data/config/geoip.metadb"; then
             log "WARN" "Failed to download geoip.metadb"
         else
             log "SUCCESS" "Downloaded to proxy-data/config/geoip.metadb"
