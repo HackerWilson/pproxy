@@ -87,8 +87,8 @@ log() {
         printf "> %s\n" "$_log_message" >&2
     fi
 }
-log_sublevel_start() { (( LOG_INDENT += 4 )) }
-log_sublevel_end() { (( LOG_INDENT -= 4 )) }
+log_sublevel_start() { (( LOG_INDENT += 4 )); }
+log_sublevel_end() { (( LOG_INDENT -= 4 )); }
 
 # Check dependencies.
 # Usage: check_dep [<dependency command>]
