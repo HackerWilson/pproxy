@@ -9,7 +9,7 @@ fi
 
 set -u # Exit on unset variables
 
-readonly TOOL_DEPS=(curl gzip chmod setsid grep kill realpath ps)
+readonly TOOL_DEPS=(curl gzip chmod setsid grep kill readlink ps cat)
 readonly UNZIP_DEP_ALTERNATIVES=(unzip 7z bsdtar python3 jar)
 UNZIP_DEP="UNSET"
 readonly GITHUB_PROXIES=(
@@ -827,7 +827,7 @@ main() {
         log "ERROR" "Failed to find an unused port"
         exit 1
     fi
-    daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(realpath proxy-data/metacubexd)"
+    daemon_run mihomo ./proxy-data/mihomo.log ./proxy-data/mihomo -d "proxy-data/config" -ext-ctl "0.0.0.0:$ext_port" -ext-ui "$(readlink --canonicalize-existing proxy-data/metacubexd)"
 
     log "SUCCESS" "${COLOR_BOLD}Mihomo started in the background!${COLOR_NORMAL}"
     log "INFO" "Note: You can access the web UI at ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/ui${COLOR_NORMAL}. Use ${COLOR_UNDERLINE}http://<server-ip>:$ext_port/${COLOR_NORMAL} as the control server address in the WebUI."
