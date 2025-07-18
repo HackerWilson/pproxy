@@ -5,12 +5,12 @@
 ## 特性
 
 - **单文件**：不需要克隆整个仓库，只需下载一个文件 `proxy.sh`，并运行它
-- **最小依赖**：仅依赖 Bash、Curl 和[最基本的 GNU 工具集](https://github.com/w568w/pproxy/blob/main/proxy.sh#L12)，几乎在任何发行版上都可以运行
+- **最小依赖**：仅依赖 Bash 3.2+、Curl 和[最基本的 GNU 工具集](https://github.com/w568w/pproxy/blob/main/proxy.sh#L12)，几乎在任何发行版上都可以运行
 - **网络友好**：内置 GitHub 镜像源和智能测速选择，无需另外下载
 - **整洁**：所有文件放置在同一目录的 `./proxy-data` 下，运行期间绝不创建任何额外目录、垃圾文件或临时文件
 - **先进**：使用最新的 [Mihomo](https://github.com/MetaCubeX/mihomo) 内核 + [metacubexd](https://github.com/metacubex/metacubexd) 网页前端，支持几乎所有协议
 - **兼容性和可移植性**：编写过程中尽可能考虑到了所有可能的情况并遵循最佳实践，不对系统/平台做任何假设，不存在任何行为硬编码
-- **幂等**：多次运行不会产生副作用。运行两次 `proxy.sh` 不会下载两次 Mihomo 或 metacubexd，也不会启动两个代理服务
+- **幂等**：多次运行不会产生副作用。运行两次 `proxy.sh` 不会下载两次 Mihomo 或 metacubexd，也不会启动两个代理服务。你可以在运行中任意时候用 <kbd>Ctrl</kbd> + <kbd>C</kbd> 中断，不会影响后续运行
 
 ## 如何使用
 
