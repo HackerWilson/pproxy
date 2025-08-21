@@ -12,7 +12,7 @@
 - **兼容性和可移植性**：编写过程中尽可能考虑到了所有可能的情况并遵循最佳实践，不对系统/平台做任何假设，不存在任何行为硬编码
 - **幂等**：多次运行不会产生副作用。运行两次 `proxy.sh` 不会下载两次 Mihomo 或 metacubexd，也不会启动两个代理服务。你可以在运行中任意时候用 <kbd>Ctrl</kbd> + <kbd>C</kbd> 中断，不会影响后续运行
 
-## 如何使用
+## 如何使用？
 
 ```bash
 wget https://raw.githubusercontent.com/w568w/pproxy/main/proxy.sh
@@ -60,6 +60,14 @@ $ bash proxy.sh help 或 $ bash proxy.sh -h 或 $ bash proxy.sh --help
 ### 注意事项
 
 - `proxy.sh` 仅支持 Clash / Clash Meta / Mihomo 的配置文件格式，从你的代理服务商获取配置文件时请注意。
+
+## 如何卸载？
+
+执行以下命令即可无痕卸载，不会留下任何残留文件、配置或包：
+
+```bash
+$ bash proxy.sh stop && rm -rf ./proxy-data proxy.sh
+```
 
 ## 为什么是英文的？
 
