@@ -133,6 +133,8 @@ smart_unzip() {
         command 7z x -y "$file" -o"$dest"
         ;;
     bsdtar)
+        # bsdtar requires the dest to be created before extraction
+        mkdir --parents "$dest"
         command bsdtar --extract --file "$file" --directory "$dest"
         ;;
     python3)
