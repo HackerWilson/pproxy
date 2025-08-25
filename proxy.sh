@@ -368,10 +368,12 @@ download_mihomo() {
     log_sublevel_start
     if ! gzip --decompress --force "proxy-data/mihomo.gz"; then
         log "ERROR" "Failed to unzip Mihomo"
+        rm "proxy-data/mihomo" # Clean up on failure
         exit 1
     fi
     if ! chmod +x "proxy-data/mihomo"; then
         log "ERROR" "Failed to make mihomo executable"
+        rm "proxy-data/mihomo" # Clean up on failure
         exit 1
     fi
     log "SUCCESS" "Unzipped to proxy-data/mihomo"
@@ -421,10 +423,12 @@ download_metacubexd() {
     rm --recursive --force "proxy-data/metacubexd/"
     if ! smart_unzip "proxy-data/metacubexd.zip" "proxy-data/metacubexd/"; then
         log "ERROR" "Failed to unzip metacubexd"
+        rm --recursive --force "proxy-data/metacubexd/" # Clean up on failure
         exit 1
     fi
     if [[ ! -d "proxy-data/metacubexd/" ]]; then
         log "ERROR" "Failed to unzip metacubexd"
+        rm --recursive --force "proxy-data/metacubexd/" # Clean up on failure
         exit 1
     fi
     log "SUCCESS" "Unzipped to proxy-data/metacubexd"
