@@ -24,20 +24,9 @@ wget https://raw.githubusercontent.com/w568w/pproxy/main/proxy.sh
 wget https://github.akams.cn/https://raw.githubusercontent.com/w568w/pproxy/main/proxy.sh
 ```
 
-下载后执行 `bash proxy.sh` 即可启动代理。
+下载后执行 `bash proxy.sh https://example.com/subscription.yaml` 即可启动代理并下载订阅文件。
 
-```bash
-$ bash proxy.sh
-[INFO] Mihomo already exists, skip downloading. Version: 
-Mihomo Meta v1.19.7 linux amd64 with go1.24.3 Mon May 12 02:04:51 UTC 2025
-Use tags: with_gvisor
-[INFO] metacubexd already exists, skip downloading.
-[INFO] Mihomo started in the background. You can access the web UI at http://<server-ip>:9091/ui
-[INFO] You may need to put your subscription file at proxy-data/config/config.yaml and restart Mihomo.
-[INFO] To stop Mihomo, run: proxy.sh stop
-```
-
-### 常用命令
+### 更多常用命令
 
 ```bash
 # （如果需要下载，则）下载代理，然后（重新）启动代理，交互式输入配置并启动 WebUI 和隧道服务
@@ -47,12 +36,16 @@ $ bash proxy.sh
 $ bash proxy.sh https://example.com/subscription.yaml
 # 下载并启动代理，从标准输入读取配置文件（在 SSH 服务器上粘贴配置时很有用）
 $ bash proxy.sh -
+
 # 检查当前代理运行状态
 $ bash proxy.sh status
+
 # 停止代理
 $ bash proxy.sh stop
+
 # 对已运行在 9000 端口的 WebUI 进行端口映射，以便访问和管理
 $ bash proxy.sh tunnel 9000
+
 # 查看帮助信息
 $ bash proxy.sh help 或 $ bash proxy.sh -h 或 $ bash proxy.sh --help
 ```
