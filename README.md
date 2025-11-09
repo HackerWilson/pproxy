@@ -26,6 +26,15 @@ wget https://github.akams.cn/https://raw.githubusercontent.com/w568w/pproxy/main
 
 下载后执行 `bash proxy.sh https://example.com/subscription.yaml` 即可启动代理并下载订阅文件。
 
+另外，若要为当前 Shell 环境配置代理，可以执行以下命令：
+
+```bash
+# 使用代理（将会设置 http_proxy、https_proxy、all_proxy 环境变量）
+$ . ./proxy-data/on
+# 取消代理（将取消上述环境变量）
+$ . ./proxy-data/off
+```
+
 ### 更多常用命令
 
 ```bash
