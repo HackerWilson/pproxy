@@ -959,106 +959,63 @@ try_tunnel_service() {
 
 # ==== General Functions ====
 
-# Function to compare two floating-point numbers purely in Bash (Corrected Version)
+# Compare two floating-point numbers in pure Bash.
 # Usage: compare_floats NUM1 NUM2
-# Output: Prints '<', '=', or '>' to standard output indicating if NUM1 is
-#         less than, equal to, or greater than NUM2.
-# Returns: 0 if comparison successful, 1 on error (e.g., invalid number)
+# Output: '<', '=', or '>' to stdout
+# Returns: 0 on success, 1 on invalid input
 compare_floats() {
-    local num1_orig="$1"
-    local num2_orig="$2"
-    local result=""
+    local num1="$1" num2="$2"
+    local float_regex='^-?[0-9]*\.?[0-9]+$|^-?\.[0-9]+$'
 
-    # --- Basic Input Validation ---
-    local float_regex='^-?[0-9]*(\.[0-9]*)?$|^-?\.([0-9]+)$' # Allow empty integer part like .5
-    if ! [[ "$num1_orig" =~ $float_regex ]]; then
-        echo "Error: Invalid number format for first argument: '$num1_orig'" >&2
-        return 1
-    fi
-    if ! [[ "$num2_orig" =~ $float_regex ]]; then
-        echo "Error: Invalid number format for second argument: '$num2_orig'" >&2
+    # Validate input
+    if ! [[ "$num1" =~ $float_regex && "$num2" =~ $float_regex ]]; then
+        echo "Error: Invalid number format" >&2
         return 1
     fi
 
-    # --- Handle Signs ---
+    # Extract signs
     local sign1="" sign2=""
-    [[ "$num1_orig" == "-"* ]] && sign1="-"
-    [[ "$num2_orig" == "-"* ]] && sign2="-"
+    [[ "$num1" == -* ]] && sign1="-"
+    [[ "$num2" == -* ]] && sign2="-"
 
-    if [[ "$sign1" == "-" && "$sign2" != "-" ]]; then
-        result="<"
-    elif [[ "$sign1" != "-" && "$sign2" == "-" ]]; then
-        result=">"
-    else
-        # --- Signs are the same (or both zero/positive) ---
-        local num1="${num1_orig#-}"
-        local num2="${num2_orig#-}"
+    # Quick comparison when signs differ
+    if [[ "$sign1" != "$sign2" ]]; then
+        [[ "$sign1" == "-" ]] && echo "<" || echo ">"
+        return 0
+    fi
 
-        # --- Separate Integer and Fractional Parts ---
-        local int1="" frac1="" int2="" frac2=""
+    # Remove signs for magnitude comparison
+    num1="${num1#-}"
+    num2="${num2#-}"
 
-        if [[ "$num1" == *"."* ]]; then
-            int1="${num1%%.*}"
-            frac1="${num1#*.}"
-        else
-            int1="$num1"
-            frac1=""
-        fi
-        # Handle cases like ".5" -> int="0", frac="5"
-        # Handle empty int like "." -> int="0"
-        [[ -z "$int1" ]] && int1="0"
+    # Split into integer and fractional parts
+    local int1="${num1%%.*}" frac1="" int2="${num2%%.*}" frac2=""
+    [[ "$num1" == *.* ]] && frac1="${num1#*.}"
+    [[ "$num2" == *.* ]] && frac2="${num2#*.}"
+    : "${int1:=0}" "${int2:=0}"
 
-        if [[ "$num2" == *"."* ]]; then
-            int2="${num2%%.*}"
-            frac2="${num2#*.}"
-        else
-            int2="$num2"
-            frac2=""
-        fi
-        [[ -z "$int2" ]] && int2="0"
+    # Pad fractional parts to equal length
+    local len1=${#frac1} len2=${#frac2}
+    while ((${#frac1} < len2)); do frac1+="0"; done
+    while ((${#frac2} < len1)); do frac2+="0"; done
 
-        # --- Pad Fractional Parts to Same Length ---
-        local len1="${#frac1}"
-        local len2="${#frac2}"
-        local max_decimals=$((len1 > len2 ? len1 : len2))
+    # Combine and remove leading zeros for integer comparison
+    local comp1="${int1}${frac1}" comp2="${int2}${frac2}"
+    comp1="${comp1#"${comp1%%[!0]*}"}"
+    comp2="${comp2#"${comp2%%[!0]*}"}"
+    : "${comp1:=0}" "${comp2:=0}"
 
-        while [[ "${#frac1}" -lt "$max_decimals" ]]; do frac1="${frac1}0"; done
-        while [[ "${#frac2}" -lt "$max_decimals" ]]; do frac2="${frac2}0"; done
+    # Compare magnitudes
+    local result="="
+    ((comp1 < comp2)) && result="<"
+    ((comp1 > comp2)) && result=">"
 
-        # --- Combine Parts into Integer Strings (No Integer Padding Needed Here) ---
-        # We will compare these numerically after removing leading zeros.
-        local comp1="${int1}${frac1}"
-        local comp2="${int2}${frac2}"
-
-        # Remove leading zeros BEFORE integer comparison to avoid octal issues and ensure correct base-10 comparison
-        comp1="${comp1#"${comp1%%[!0]*}"}" # Remove leading zeros
-        comp2="${comp2#"${comp2%%[!0]*}"}" # Remove leading zeros
-        # Handle the case where the number was zero or became empty after removing zeros (e.g., "0.0")
-        comp1="${comp1:-0}"
-        comp2="${comp2:-0}"
-
-        # --- Compare the resulting numbers using Bash INTEGER comparison ---
-        local cmp_result=""
-        if [[ "$comp1" -lt "$comp2" ]]; then
-            cmp_result="<"
-        elif [[ "$comp1" -gt "$comp2" ]]; then
-            cmp_result=">"
-        else cmp_result="="; fi
-
-        # --- Adjust result if both numbers were negative ---
-        if [[ "$sign1" == "-" ]]; then # (implies sign2 is also "-")
-            if [[ "$cmp_result" == "<" ]]; then
-                result=">"
-            elif [[ "$cmp_result" == ">" ]]; then
-                result="<"
-            else result="="; fi
-        else
-            result="$cmp_result"
-        fi
+    # Invert result for negative numbers
+    if [[ "$sign1" == "-" && "$result" != "=" ]]; then
+        [[ "$result" == "<" ]] && result=">" || result="<"
     fi
 
     echo "$result"
-    return 0
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
