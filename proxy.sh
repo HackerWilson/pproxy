@@ -17,6 +17,8 @@ readonly GITHUB_PROXIES=(
     https://github.akams.cn/
     https://gh-proxy.net/
     https://tvv.tw/
+    https://github.xxlab.tech/
+    https://gh.felicity.ac.cn/
 )
 readonly GITHUB_SPEEDTEST_URL="https://raw.githubusercontent.com/microsoft/vscode/main/LICENSE.txt"
 
