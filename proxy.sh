@@ -9,7 +9,7 @@ fi
 
 set -u # Exit on unset variables
 
-readonly TOOL_DEPS=(curl gzip chmod setsid grep kill readlink ps cat)
+readonly TOOL_DEPS=(curl gzip chmod setsid grep kill readlink ps cat mkdir)
 readonly UNZIP_DEP_ALTERNATIVES=(unzip 7z bsdtar python3 jar)
 UNZIP_DEP="UNSET"
 readonly GITHUB_PROXIES=(
