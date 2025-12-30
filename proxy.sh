@@ -868,7 +868,7 @@ main() {
         write_out_env_setup_script "$mihomo_mixed_port"
     else
         log "WARN" "Mihomo mixed-port is not set in the config file. You may need to set it manually in proxy-data/config/config.yaml and restart Mihomo."
-        log "WARN" "The environment setup script is not written."
+        log "WARN" "    The environment setup script is not written because mixed-port is unknown."
     fi
     
     me=${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}
