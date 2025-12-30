@@ -911,8 +911,10 @@ try_tunnel_service() {
         return 1
     fi
 
-    log "INFO" "Note: after you start the tunnel, you can usually access the WebUI at ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/ui${COLOR_NORMAL}."
-    log "INFO" "    You can then use ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/${COLOR_NORMAL} as the control server address in the WebUI."
+    log "INFO" "${COLOR_BOLD}Quick Guide: How to use the tunneled WebUI:${COLOR_NORMAL}"
+    log "INFO" "  1. After the tunnel is established, find a line like ${COLOR_UNDERLINE}Forwarding domain: https://<the-service-random-subdomain>${COLOR_NORMAL} in the output."
+    log "INFO" "  2. Use ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/ui${COLOR_NORMAL} to access the WebUI."
+    log "INFO" "  3. Input ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/${COLOR_NORMAL} as the control server address in the WebUI."
     readonly SSH_DEFAULT_PARAMS=(
         -o StrictHostKeyChecking=no # skip host key checking
         -o ServerAliveInterval=30   # send keep-alive packets
