@@ -910,7 +910,7 @@ try_tunnel_service() {
         log_sublevel_end
         return 1
     fi
-
+    
     log "INFO" "${COLOR_BOLD}Quick Guide: How to use the tunneled WebUI:${COLOR_NORMAL}"
     log "INFO" "  1. After the tunnel is established, find a line like ${COLOR_UNDERLINE}Forwarding domain: https://<the-service-random-subdomain>${COLOR_NORMAL} in the output."
     log "INFO" "  2. Use ${COLOR_UNDERLINE}https://<the-service-random-subdomain>/ui${COLOR_NORMAL} to access the WebUI."
@@ -932,6 +932,14 @@ try_tunnel_service() {
     log "INFO" "Try tunneling through localhost.run..."
     ssh "${SSH_DEFAULT_PARAMS[@]}" -R80:localhost:"$tunnel_port" nokey@localhost.run
     if ! tunnel_ask_next_or_exit "localhost.run" $?; then
+        log_sublevel_end
+        return
+    fi
+
+    # - tunnel through tunnl.gg
+    log "INFO" "Try tunneling through tunnl.gg..."
+    ssh "${SSH_DEFAULT_PARAMS[@]}" -R80:localhost:"$tunnel_port" proxy.tunnl.gg
+    if ! tunnel_ask_next_or_exit "tunnl.gg" $?; then
         log_sublevel_end
         return
     fi
